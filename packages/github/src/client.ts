@@ -49,6 +49,7 @@ export class GitHubClient {
       signal?.throwIfAborted();
       await this.acquire(signal);
       let response: Response;
+      let body: string;
       try {
         const timeout = AbortSignal.timeout(
           this.options.requestTimeoutSeconds * 1000,
@@ -65,7 +66,14 @@ export class GitHubClient {
             redirect: 'error',
           },
         );
-      } catch {
+        if (response.status === 401)
+          throw new FatalError(
+            'AUTHENTICATION',
+            'GitHub authentication is unusable.',
+          );
+        body = await response.text();
+      } catch (error) {
+        if (error instanceof FatalError) throw error;
         if (signal?.aborted) signal.throwIfAborted();
         if (attempt >= this.options.retries) throw new ApiError(0, 'NETWORK');
         await this.pause(1000 * 2 ** attempt, signal);
@@ -73,20 +81,14 @@ export class GitHubClient {
       } finally {
         this.release();
       }
-      if (response.status === 401)
-        throw new FatalError(
-          'AUTHENTICATION',
-          'GitHub authentication is unusable.',
-        );
       if (response.ok) {
         try {
-          return await response.json();
+          return JSON.parse(body);
         } catch {
           throw new ApiError(response.status, 'INVALID_RESPONSE');
         }
       }
-      // Consume the body without exposing it to rules, reports, or logs.
-      const body = await response.text();
+      // Interpret only known status details; never expose raw response bodies.
       if (response.status === 409) {
         try {
           const data: unknown = JSON.parse(body);

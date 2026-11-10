@@ -100,3 +100,28 @@ test('queued requests cancel without waiting for an occupied request slot', asyn
   release?.();
   await first;
 });
+
+test('the concurrency limit covers response body consumption as well as headers', async () => {
+  let active = 0;
+  let maximum = 0;
+  const client = new GitHubClient({
+    ...settings,
+    fetch: async () => {
+      active++;
+      maximum = Math.max(maximum, active);
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            setTimeout(() => {
+              controller.enqueue(new TextEncoder().encode('{}'));
+              controller.close();
+              active--;
+            }, 5);
+          },
+        }),
+      );
+    },
+  });
+  await Promise.all(Array.from({ length: 8 }, () => client.get('/x')));
+  expect(maximum).toBe(2);
+});
