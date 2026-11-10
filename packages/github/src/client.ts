@@ -17,12 +17,25 @@ export class GitHubClient {
   private active = 0;
   private waiters: (() => void)[] = [];
   constructor(private readonly options: ClientOptions) {}
-  private async acquire(): Promise<void> {
+  private async acquire(signal?: AbortSignal): Promise<void> {
     if (this.active < this.options.concurrency) {
       this.active++;
       return;
     }
-    await new Promise<void>((resolve) => this.waiters.push(resolve));
+    await new Promise<void>((resolve, reject) => {
+      const start = () => {
+        signal?.removeEventListener('abort', abort);
+        resolve();
+      };
+      const abort = () => {
+        const index = this.waiters.indexOf(start);
+        if (index !== -1) this.waiters.splice(index, 1);
+        reject(signal?.reason ?? new Error('Request cancelled.'));
+      };
+      this.waiters.push(start);
+      signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) abort();
+    });
   }
   private release(): void {
     const next = this.waiters.shift();
@@ -34,7 +47,7 @@ export class GitHubClient {
       throw new Error('Invalid API path.');
     for (let attempt = 0; ; attempt++) {
       signal?.throwIfAborted();
-      await this.acquire();
+      await this.acquire(signal);
       let response: Response;
       try {
         const timeout = AbortSignal.timeout(

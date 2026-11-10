@@ -193,3 +193,51 @@ test('confirmed empty Git repositories are not applicable despite a default bran
     ]?.state,
   ).toBe('not-applicable');
 });
+
+test('identical file blobs share one request while preserving separate file locations', async () => {
+  let requests = 0;
+  const source =
+    'jobs:\n  check:\n    steps:\n      - uses: actions/checkout@v6\n';
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) => {
+      if (path.includes('/commits/')) return { sha, commit: { tree: { sha } } };
+      if (path.includes('/trees/'))
+        return {
+          truncated: false,
+          tree: ['one', 'two'].map((name) => ({
+            path: `.github/workflows/${name}.yml`,
+            type: 'blob',
+            mode: '100644',
+            sha,
+          })),
+        };
+      if (path.includes('/blobs/')) {
+        requests++;
+        return {
+          encoding: 'base64',
+          content: Buffer.from(source).toString('base64'),
+          size: source.length,
+        };
+      }
+      return repository();
+    }),
+  });
+  const resource = (
+    await provider.discover({
+      ...targets,
+      organizations: [],
+      repositories: ['org/repo-1'],
+    })
+  ).resources[0];
+  if (!resource) throw new Error('Missing fixture resource');
+  const evidence = (
+    await provider.collect(resource, ['github/action-references@1'])
+  )['github/action-references@1'];
+  expect(evidence?.state).toBe('available');
+  expect(requests).toBe(1);
+  if (evidence?.state === 'available')
+    expect(
+      (evidence.data as { references: unknown[] }).references,
+    ).toHaveLength(2);
+});

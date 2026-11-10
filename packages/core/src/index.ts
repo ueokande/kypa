@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
+  type Evidence,
   FatalError,
   type Policy,
   type Provider,
@@ -87,11 +88,28 @@ export async function runScan(
         ]),
       ),
     ];
-    const evidence = await dependencies.provider.collect(
-      resource,
-      ids,
-      dependencies.signal,
-    );
+    let evidence: Record<string, Evidence>;
+    try {
+      evidence = await dependencies.provider.collect(
+        resource,
+        ids,
+        dependencies.signal,
+      );
+    } catch (error) {
+      if (error instanceof FatalError || dependencies.signal?.aborted)
+        throw error;
+      evidence = Object.fromEntries(
+        ids.map((id) => [
+          id,
+          {
+            state: 'unavailable',
+            observedAt: now().toISOString(),
+            code: 'COLLECTION',
+            message: 'The provider could not collect required evidence.',
+          },
+        ]),
+      );
+    }
     const key = resourceKey(resource);
     for (const selected of policy.rules) {
       const rule = ruleMap.get(selected.id);
@@ -103,6 +121,12 @@ export async function runScan(
         severity: selected.severity,
         status: 'not-applicable',
         findingIds: [],
+        evidence: rule.requiredEvidence.flatMap((id) => {
+          const item = evidence[id];
+          return item
+            ? [{ id, state: item.state, observedAt: item.observedAt }]
+            : [];
+        }),
       };
       report.evaluations.push(evaluation);
       if (!applicable.includes(selected)) continue;

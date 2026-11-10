@@ -186,6 +186,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 /^[.]github\/workflows\/[^/]+[.]ya?ml$/.test(entry.path) ||
                 /(^|\/)action[.]ya?ml$/.test(entry.path),
             );
+            const blobs = new Map<string, Promise<unknown>>();
             const references = await Promise.allSettled(
               candidates.map(async (entry) => {
                 if (
@@ -200,7 +201,17 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                     size: z.number().max(1_048_576),
                   })
                   .parse(
-                    await api.get(`${base}/git/blobs/${entry.sha}`, signal),
+                    await (() => {
+                      let pending = blobs.get(entry.sha);
+                      if (!pending) {
+                        pending = api.get(
+                          `${base}/git/blobs/${entry.sha}`,
+                          signal,
+                        );
+                        blobs.set(entry.sha, pending);
+                      }
+                      return pending;
+                    })(),
                   );
                 return collectReferences(
                   Buffer.from(blob.content, 'base64').toString('utf8'),

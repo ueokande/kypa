@@ -78,3 +78,25 @@ test('request concurrency stays within the configured limit', async () => {
   await Promise.all(Array.from({ length: 10 }, () => client.get('/x')));
   expect(maximum).toBe(2);
 });
+
+test('queued requests cancel without waiting for an occupied request slot', async () => {
+  let release: (() => void) | undefined;
+  const client = new GitHubClient({
+    ...settings,
+    concurrency: 1,
+    fetch: async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return Response.json({});
+    },
+  });
+  const first = client.get('/first');
+  await vi.waitFor(() => expect(release).toBeDefined());
+  const controller = new AbortController();
+  const second = client.get('/second', controller.signal);
+  controller.abort();
+  await expect(second).rejects.toThrow();
+  release?.();
+  await first;
+});

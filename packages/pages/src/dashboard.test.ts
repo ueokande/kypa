@@ -50,6 +50,7 @@ test('renders partial coverage, escapes untrusted values, and filters evaluation
         severity: 'high',
         status: 'fail',
         findingIds: ['1'],
+        evidence: [],
       },
     ],
     findings: [

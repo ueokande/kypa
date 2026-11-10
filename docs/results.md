@@ -25,16 +25,16 @@ File locations link to the resolved scanned commit. API evidence has its own col
 
 The proposed JSON report uses `schemaVersion: 1` and these top-level fields:
 
-| Field           | Intended content                                                                      |
-| --------------- | ------------------------------------------------------------------------------------- |
-| `schemaVersion` | Report format version.                                                                |
-| `run`           | Run identity, timestamps, tool and policy versions, and complete/partial status.      |
-| `scope`         | Requested/discovered/filtered scope and coverage information.                         |
-| `resources`     | Generic identities and provider details, including resolved commits for repositories. |
-| `evaluations`   | Resource/rule outcomes and rule versions.                                             |
-| `findings`      | Stable finding identities, safe messages, severity, and locations.                    |
-| `errors`        | Safe discovery, collection, and evaluation errors.                                    |
-| `warnings`      | Nonfatal operational notices.                                                         |
+| Field           | Intended content                                                                         |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `schemaVersion` | Report format version.                                                                   |
+| `run`           | Run identity, timestamps, tool and policy versions, and complete/partial status.         |
+| `scope`         | Requested/discovered/filtered scope and coverage information.                            |
+| `resources`     | Generic identities and provider details, including resolved commits for repositories.    |
+| `evaluations`   | Resource/rule outcomes, rule versions, and evidence availability/observation timestamps. |
+| `findings`      | Stable finding identities, safe messages, severity, and locations.                       |
+| `errors`        | Safe discovery, collection, and evaluation errors.                                       |
+| `warnings`      | Nonfatal operational notices.                                                            |
 
 Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The TypeScript Report interface in packages/sdk/src/index.ts defines the current field-level format. There is no separately published JSON Schema or supported external SDK.
 

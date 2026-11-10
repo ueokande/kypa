@@ -133,3 +133,23 @@ test('failed discovery with no visible resources is a partial report, not an emp
   expect(report.run.status).toBe('partial');
   expect(report.scope.evaluated).toBe(0);
 });
+
+test('collector faults produce a safe partial report and preserve evidence observation times', async () => {
+  const report = await run({
+    provider: {
+      ...provider,
+      collect: async () => {
+        throw new Error('sensitive collector context');
+      },
+    },
+  });
+  expect(report.run.status).toBe('partial');
+  expect(report.evaluations[0]?.evidence).toEqual([
+    {
+      id: 'example/config@1',
+      state: 'unavailable',
+      observedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ]);
+  expect(JSON.stringify(report)).not.toContain('sensitive collector context');
+});

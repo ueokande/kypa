@@ -97,6 +97,7 @@ export interface Evaluation {
   severity: Severity;
   status: 'pass' | 'fail' | 'not-applicable' | 'error';
   findingIds: string[];
+  evidence: { id: string; state: Evidence['state']; observedAt: string }[];
 }
 export interface Report {
   schemaVersion: 1;
