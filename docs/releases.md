@@ -4,14 +4,14 @@
 
 ## One repository, two entry points
 
-Kypa's CLI and root GitHub Action are maintained together in [ueokande/Kypa](https://github.com/ueokande/Kypa). The CLI owns scan orchestration over shared core, providers, rules, and reporters. The Action is a thin wrapper around that CLI implementation: it translates workflow inputs, provides the token through the environment, reports outputs and a job summary, and preserves failure behavior. It does not duplicate checks or download the CLI from npm during a scan.
+Kypa's CLI and root GitHub Action are maintained together in [ueokande/kypa](https://github.com/ueokande/kypa). The CLI owns scan orchestration over shared core, providers, rules, and reporters. The Action is a thin wrapper around that CLI implementation: it translates workflow inputs, provides the token through the environment, reports outputs and a job summary, and preserves failure behavior. It does not duplicate checks or download the CLI from npm during a scan.
 
 The shared CLI execution entry point should return results and an exit code so the Action can consume them. Process termination belongs at the outer executable boundary. Whether the Action calls that entry point in-process or invokes a bundled executable does not change the public inputs or scan semantics.
 
 | Distribution | Intended contents | How users consume it |
 | --- | --- | --- |
 | Main development branch, currently `master` | TypeScript source, tests, build configuration, and root `action.yml`; generated JavaScript is not tracked. | Source development; not a supported runnable Action ref. |
-| Exact release tag, for example `v1.0.0` | A release commit containing the selected source plus compiled Action JavaScript and required runtime assets. | `uses: ueokande/Kypa@v1.0.0`, or preferably the reviewed full SHA of that release commit. |
+| Exact release tag, for example `v1.0.0` | A release commit containing the selected source plus compiled Action JavaScript and required runtime assets. | `uses: ueokande/kypa@v1.0.0`, or preferably the reviewed full SHA of that release commit. |
 | npm package, for example `@kypa/cli@1.0.0` | Compiled CLI and required runtime files, built from the same selected source revision. | Install an exact package version and commit the consumer's manifest and pnpm lockfile. |
 
 The main branch name may change; the distinction between a source branch and a compiled release commit remains. The version prefix differs between channels: Action `v1.0.0` corresponds to npm `1.0.0`. Matching versions identify the same source revision, not identical package bytes or entry-point wrappers.
