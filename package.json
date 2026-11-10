@@ -8,14 +8,15 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "build": "rslib build",
+    "build": "pnpm build:dashboard && pnpm build:action",
     "build:action": "rslib build",
     "build:dashboard": "pnpm --filter @kypa/pages build",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:smoke",
+    "test:smoke": "node scripts/smoke-action.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

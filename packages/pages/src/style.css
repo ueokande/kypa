@@ -1,0 +1,44 @@
+body {
+  margin: 0;
+  background: #f5f7fa;
+  color: #182638;
+  font:
+    16px / 1.6 system-ui,
+    sans-serif;
+}
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 32px;
+}
+h1 {
+  margin-bottom: 0;
+}
+section,
+article {
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border: 1px solid #d4dce5;
+  border-radius: 8px;
+}
+#filters {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+label {
+  display: grid;
+  gap: 5px;
+}
+input,
+select {
+  padding: 8px;
+  max-width: 100%;
+}
+strong {
+  color: #9b2e12;
+}
+a {
+  color: #1559a0;
+}

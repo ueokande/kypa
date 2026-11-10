@@ -1,0 +1,5 @@
+name: Fixture
+runs:
+  using: composite
+  steps:
+    - uses: company/check@main

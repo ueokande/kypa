@@ -1,0 +1,12 @@
+name: Fixture
+on: push
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./local
+      - uses: docker://alpine:3
+      - uses: company/check@0123456789abcdef0123456789abcdef01234567
+  reuse:
+    uses: company/workflows/.github/workflows/check.yml@main

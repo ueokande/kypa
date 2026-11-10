@@ -1,0 +1,178 @@
+import { createHash, randomUUID } from 'node:crypto';
+import {
+  FatalError,
+  type Policy,
+  type Provider,
+  type Report,
+  type Reporter,
+  type Rule,
+  resourceKey,
+} from '@kypa/sdk';
+
+export { loadPolicy, matchesPattern, parsePolicy, within } from './config.js';
+
+export async function runScan(
+  policy: Policy,
+  dependencies: {
+    provider: Provider;
+    rules: readonly Rule[];
+    reporters: readonly Reporter[];
+    policyDirectory: string;
+    policyDigest: string;
+    now?: () => Date;
+    runId?: () => string;
+    signal?: AbortSignal;
+  },
+): Promise<Report> {
+  const now = dependencies.now ?? (() => new Date());
+  const ruleMap = new Map(dependencies.rules.map((rule) => [rule.id, rule]));
+  const reporterMap = new Map(
+    dependencies.reporters.map((reporter) => [reporter.id, reporter]),
+  );
+  if (
+    ruleMap.size !== dependencies.rules.length ||
+    reporterMap.size !== dependencies.reporters.length
+  )
+    throw new FatalError('REGISTRY', 'Duplicate component IDs.');
+  for (const rule of policy.rules)
+    if (!ruleMap.has(rule.id))
+      throw new FatalError('REGISTRY', 'Unknown rule.');
+  for (const reporter of policy.reporters)
+    if (!reporterMap.has(reporter.name))
+      throw new FatalError('REGISTRY', 'Unknown reporter.');
+  const startedAt = now().toISOString();
+  dependencies.signal?.throwIfAborted();
+  const discovery = await dependencies.provider.discover(
+    policy.targets,
+    dependencies.signal,
+  );
+  if (!discovery.resources.length && !discovery.errors.length)
+    throw new FatalError('EMPTY_TARGETS', 'No effective targets remain.');
+  const report: Report = {
+    schemaVersion: 1,
+    run: {
+      id: (dependencies.runId ?? randomUUID)(),
+      startedAt,
+      completedAt: startedAt,
+      toolVersion: '0.1.0',
+      policyVersion: 1,
+      policyDigest: dependencies.policyDigest,
+      status: 'complete',
+    },
+    scope: {
+      requested: policy.targets,
+      discovered: discovery.resources.length,
+      excluded: discovery.excluded,
+      evaluated: 0,
+      discoveryLimitedToAccessibleResources: true,
+    },
+    resources: discovery.resources,
+    evaluations: [],
+    findings: [],
+    errors: [...discovery.errors],
+    warnings: [],
+  };
+  // Resource iteration is sequential; the provider bounds concurrent API requests.
+  for (const resource of report.resources) {
+    dependencies.signal?.throwIfAborted();
+    const applicable = policy.rules.filter((selected) =>
+      ruleMap
+        .get(selected.id)
+        ?.resourceTypes.includes(`${resource.provider}/${resource.type}`),
+    );
+    const ids = [
+      ...new Set(
+        applicable.flatMap((selected) => [
+          ...(ruleMap.get(selected.id)?.requiredEvidence ?? []),
+        ]),
+      ),
+    ];
+    const evidence = await dependencies.provider.collect(
+      resource,
+      ids,
+      dependencies.signal,
+    );
+    const key = resourceKey(resource);
+    for (const selected of policy.rules) {
+      const rule = ruleMap.get(selected.id);
+      if (!rule) throw new FatalError('REGISTRY', 'Unknown rule.');
+      const evaluation: Report['evaluations'][number] = {
+        resource: key,
+        rule: rule.id,
+        ruleVersion: rule.version,
+        severity: selected.severity,
+        status: 'not-applicable',
+        findingIds: [],
+      };
+      report.evaluations.push(evaluation);
+      if (!applicable.includes(selected)) continue;
+      const unavailable = rule.requiredEvidence.find(
+        (id) => !evidence[id] || evidence[id]?.state === 'unavailable',
+      );
+      if (unavailable) {
+        const item = evidence[unavailable];
+        report.errors.push({
+          phase: 'collection',
+          resource: key,
+          rule: rule.id,
+          code: item?.state === 'unavailable' ? item.code : 'MISSING_EVIDENCE',
+          message:
+            item?.state === 'unavailable'
+              ? item.message
+              : 'Required evidence was not collected.',
+        });
+        evaluation.status = 'error';
+        continue;
+      }
+      try {
+        const result = rule.evaluate(resource, evidence, selected.parameters);
+        for (const finding of result.findings) {
+          const id = createHash('sha256')
+            .update(JSON.stringify([key, rule.id, finding.key]))
+            .digest('hex');
+          report.findings.push({
+            ...finding,
+            id,
+            resource: key,
+            rule: rule.id,
+            ruleVersion: rule.version,
+            severity: selected.severity,
+          });
+          evaluation.findingIds.push(id);
+        }
+        evaluation.status = !result.applicable
+          ? 'not-applicable'
+          : result.findings.length
+            ? 'fail'
+            : 'pass';
+      } catch {
+        evaluation.status = 'error';
+        report.errors.push({
+          phase: 'evaluation',
+          resource: key,
+          rule: rule.id,
+          code: 'EVALUATION',
+          message: 'Rule could not evaluate the collected evidence.',
+        });
+      }
+    }
+    report.scope.evaluated++;
+  }
+  report.run.completedAt = now().toISOString();
+  report.run.status = report.errors.length ? 'partial' : 'complete';
+  for (const selected of policy.reporters) {
+    dependencies.signal?.throwIfAborted();
+    try {
+      await reporterMap.get(selected.name)?.write(report, selected.options, {
+        policyDirectory: dependencies.policyDirectory,
+        ...(dependencies.signal ? { signal: dependencies.signal } : {}),
+      });
+    } catch {
+      throw new FatalError(
+        'OUTPUT',
+        'Reporter failed; this run must not be published.',
+      );
+    }
+  }
+  return report;
+}
