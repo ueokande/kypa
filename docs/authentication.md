@@ -1,6 +1,6 @@
 # Authentication
 
-> Planned first-release authentication contract; Kypa is not available yet.
+> First-release authentication contract. Kypa has not been released yet.
 
 Kypa reads repositories using a PAT passed to the proposed Action from a central `KYPA_PAT` Actions secret. The Action passes the token to the collection layer; users do not configure a separate token environment variable. Only collection receives credentials. Kypa does not automatically load `.env` files. Never put literal tokens in commands or policy files. Target repositories require no Kypa installation, but all normal access controls apply.
 
@@ -10,12 +10,12 @@ Prefer a fine-grained PAT when organization policies and the required GitHub end
 
 A classic PAT is an alternative only when permitted by the organization. Private/internal repository access commonly requires its broad `repo` scope, increasing the exposure if compromised. Organizations using SAML SSO may require explicit SSO authorization. Token scopes never grant permissions that the issuing account does not already possess.
 
-| Operation | Required access to verify |
-| --- | --- |
-| Organization discovery and repository identity | Existing account access and repository Metadata read; discovery only returns repositories visible to the token. |
-| Default-branch files and Action references | Contents read on each target. |
-| Classic default-branch protection | Administration read for fine-grained tokens, endpoint support, and sufficient account privileges; classic tokens also need appropriate scope and account access. |
-| Pages deployment | Separate GITHUB_TOKEN permissions and OIDC, not the collection PAT. |
+| Operation                                      | Required access to verify                                                                                                                                        |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Organization discovery and repository identity | Existing account access and repository Metadata read; discovery only returns repositories visible to the token.                                                  |
+| Default-branch files and Action references     | Contents read on each target.                                                                                                                                    |
+| Classic default-branch protection              | Administration read for fine-grained tokens, endpoint support, and sufficient account privileges; classic tokens also need appropriate scope and account access. |
+| Pages deployment                               | Separate GITHUB_TOKEN permissions and OIDC, not the collection PAT.                                                                                              |
 
 Check current GitHub endpoint documentation when issuing a token: permission and organization policy requirements can change. Read access to files does not establish permission to inspect protection settings. A PAT cannot elevate its owner to administrator.
 

@@ -1,6 +1,6 @@
 # Configuration reference
 
-> Proposed first-release YAML contract. No parser or runtime is available yet.
+> First-release YAML contract, implemented in the source tree but not released yet.
 
 Use `kypa.yaml` by default or select another file with the Action's `config` input. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
 
@@ -47,13 +47,13 @@ This example spans two owners. Confirm that the selected authentication covers b
 
 ## Top-level fields
 
-| Field | Contract |
-| --- | --- |
-| `version` | Required policy format version, initially `1`. |
-| `targets` | At least one organization or explicit repository is required. |
-| `scan` | Optional collection controls; defaults below. |
-| `rules` | Selected registered rule IDs with settings. At least one enabled rule is required. |
-| `reporters` | Required nonempty list of registered reporters and validated options. |
+| Field       | Contract                                                                           |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `version`   | Required policy format version, initially `1`.                                     |
+| `targets`   | At least one organization or explicit repository is required.                      |
+| `scan`      | Optional collection controls; defaults below.                                      |
+| `rules`     | Selected registered rule IDs with settings. At least one enabled rule is required. |
+| `reporters` | Required nonempty list of registered reporters and validated options.              |
 
 ## Targets
 
@@ -65,11 +65,11 @@ Discovery cannot list repositories the token cannot see. Compare discovered scop
 
 ## Collection controls
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `scan.concurrency` | `4` | Positive integer cap on concurrent requests. |
-| `scan.retries` | `3` | Nonnegative integer maximum retries after an initial request. |
-| `scan.requestTimeoutSeconds` | `30` | Positive request timeout in seconds. |
+| Setting                      | Default | Meaning                                                       |
+| ---------------------------- | ------- | ------------------------------------------------------------- |
+| `scan.concurrency`           | `4`     | Positive integer cap on concurrent requests.                  |
+| `scan.retries`               | `3`     | Nonnegative integer maximum retries after an initial request. |
+| `scan.requestTimeoutSeconds` | `30`    | Positive request timeout in seconds.                          |
 
 Retries are bounded and honor `Retry-After` and rate-limit responses. Permanent authorization/configuration failures must not cause endless retries. Lower concurrency when rate limits occur; higher concurrency does not increase API quotas.
 
@@ -82,3 +82,7 @@ Only rules listed in `rules` with `enabled` other than `false` run. `enabled` de
 `json` requires `options.path`, the destination JSON file. `pages` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/kypa-monitor/` for that project path. It must match the deployment URL.
 
 Output destinations must not overlap each other or overwrite source or configuration. For example, do not put the JSON file inside the Pages destination, point Pages at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.
+
+Output destinations must be fresh, dedicated paths beneath the policy directory; existing destinations, including prior generated reports, are rejected rather than overwritten. The standard workflow checks out a fresh central repository on each run. Clear only known generated outputs before a development rerun. Symlinks must not redirect output outside the policy directory. Pages base paths support slash-delimited letters, digits, hyphens, and underscores.
+
+Retries honor server delays up to five minutes; longer delays produce an explicit coverage error rather than holding a workflow indefinitely. A truncated Git tree, unsupported file mode, or Action/workflow file larger than 1 MiB produces a collection error. These limits must not be interpreted as a passing evaluation.

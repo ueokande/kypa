@@ -1,19 +1,19 @@
 # Results and coverage
 
-> Proposed first-release report and dashboard contract. There is no implemented or verified field-level schema yet.
+> First-release report and dashboard contract. The source implementation uses the internal Report interface in packages/sdk; no Action release exists yet.
 
-The static dashboard shows the latest published scan only. Planned controls include resource, rule, and severity filters and search. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
+The static dashboard shows the latest published scan only. Controls include resource, rule, and severity filters and search. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
 
 ## Evaluations and findings
 
 An evaluation records whether a rule could evaluate a resource and its outcome. A finding records a specific violation; it is not a substitute for an evaluation record. Zero findings does not establish successful evaluation.
 
-| Evaluation status | Meaning |
-| --- | --- |
-| `pass` | Evaluation completed with no violations. |
-| `fail` | Evaluation completed with at least one finding. |
-| `not-applicable` | The rule does not apply to available resource/evidence conditions. |
-| `error` | Required collection or evaluation could not complete reliably. |
+| Evaluation status | Meaning                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `pass`            | Evaluation completed with no violations.                           |
+| `fail`            | Evaluation completed with at least one finding.                    |
+| `not-applicable`  | The rule does not apply to available resource/evidence conditions. |
+| `error`           | Required collection or evaluation could not complete reliably.     |
 
 Keep all findings; do not delete evidence of violations. Errors cannot be converted into passes.
 
@@ -25,18 +25,18 @@ File locations link to the resolved scanned commit. API evidence has its own col
 
 The proposed JSON report uses `schemaVersion: 1` and these top-level fields:
 
-| Field | Intended content |
-| --- | --- |
-| `schemaVersion` | Report format version. |
-| `run` | Run identity, timestamps, tool and policy versions, and complete/partial status. |
-| `scope` | Requested/discovered/filtered scope and coverage information. |
-| `resources` | Generic identities and provider details, including resolved commits for repositories. |
-| `evaluations` | Resource/rule outcomes and rule versions. |
-| `findings` | Stable finding identities, safe messages, severity, and locations. |
-| `errors` | Safe discovery, collection, and evaluation errors. |
-| `warnings` | Nonfatal operational notices. |
+| Field           | Intended content                                                                      |
+| --------------- | ------------------------------------------------------------------------------------- |
+| `schemaVersion` | Report format version.                                                                |
+| `run`           | Run identity, timestamps, tool and policy versions, and complete/partial status.      |
+| `scope`         | Requested/discovered/filtered scope and coverage information.                         |
+| `resources`     | Generic identities and provider details, including resolved commits for repositories. |
+| `evaluations`   | Resource/rule outcomes and rule versions.                                             |
+| `findings`      | Stable finding identities, safe messages, severity, and locations.                    |
+| `errors`        | Safe discovery, collection, and evaluation errors.                                    |
+| `warnings`      | Nonfatal operational notices.                                                         |
 
-Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The full field-level report schema will follow implementation. This table is not a verified executable schema and does not promise undocumented nested field names.
+Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The TypeScript Report interface in packages/sdk/src/index.ts defines the current field-level format. There is no separately published JSON Schema or supported external SDK.
 
 Consumers must check supported schema versions, completeness, and evaluation outcomes before interpreting finding counts. Reports must not contain secrets, raw API payloads, or unnecessary source content. Messages and locations may still reveal internal repository names and policy posture; restrict report access.
 

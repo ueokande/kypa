@@ -1,6 +1,6 @@
 # Getting started
 
-> Planned first-release workflow. Kypa is not implemented or released; the Action references in this manual are illustrative and cannot be used today.
+> Unreleased first-release workflow. Kypa has an initial source implementation, but the illustrative Action release references below are not available yet.
 
 ## Prepare central execution
 

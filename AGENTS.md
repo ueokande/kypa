@@ -1,6 +1,6 @@
 # Contributor guidance
 
-Kypa means **Keep Your Policies Aligned**. It scans resources against centrally defined configuration policies. The software is currently unimplemented and unpublished. This task establishes documentation, not executable software.
+Kypa means **Keep Your Policies Aligned**. It scans resources against centrally defined configuration policies. The initial TypeScript implementation is under development and unreleased. Keep documentation aligned with implemented behavior while clearly marking unreleased Action references.
 
 ## Language and documentation
 
@@ -14,20 +14,20 @@ The initial reports are JSON and an access-controlled static GitHub Pages dashbo
 
 ## Toolchain
 
-Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Select supported stable releases and compatible Node.js LTS when implementation starts, and commit the pnpm lockfile then.
+Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
 
 ## Architecture
 
 Keep these components separate through explicit, versioned interfaces:
 
-| Component | Responsibilities |
-| --- | --- |
-| SDK | Generic resource identity, evidence, evaluations, findings, and internal component contracts. Repository fields must not be mandatory for unrelated resource types. |
-| Provider / collector | Discovery, pagination, API and file collection, normalized evidence, credentials, and API details. |
-| Rule | Declare resource types, required evidence, version, default severity, and runtime parameter schema. Evaluate collected evidence without credentials or network calls. |
-| Core / runner | Validate policy, resolve built-in components and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, and evaluate rules. |
-| Reporter | Consume the common scan report. Initially JSON and static Pages; adding formats must not change rules. |
-| Action adapter | Read workflow inputs, call the common runner directly, and translate structured results into outputs, summary, and step success/failure. Keep Actions APIs out of the runner. |
+| Component            | Responsibilities                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK                  | Generic resource identity, evidence, evaluations, findings, and internal component contracts. Repository fields must not be mandatory for unrelated resource types.           |
+| Provider / collector | Discovery, pagination, API and file collection, normalized evidence, credentials, and API details.                                                                            |
+| Rule                 | Declare resource types, required evidence, version, default severity, and runtime parameter schema. Evaluate collected evidence without credentials or network calls.         |
+| Core / runner        | Validate policy, resolve built-in components and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, and evaluate rules.                        |
+| Reporter             | Consume the common scan report. Initially JSON and static Pages; adding formats must not change rules.                                                                        |
+| Action adapter       | Read workflow inputs, call the common runner directly, and translate structured results into outputs, summary, and step success/failure. Keep Actions APIs out of the runner. |
 
 Start with SDK, core, Action adapter, GitHub provider, GitHub rules, JSON reporter, and Pages reporter/dashboard packages. Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
 
@@ -56,7 +56,6 @@ Violations must not prevent report generation or publication. Fatal configuratio
 Use the PAT only for collection. Use GITHUB_TOKEN and OIDC for Pages deployment, separating scan and deployment permissions. Never publish secrets, raw API responses, or unnecessary source content. Escape untrusted rendered data.
 
 Use fixture-based Vitest tests for rules, collection/evaluation failures, and reporters. Validate formatting, lint, types, tests, and relevant builds. Distinguish failed checks from unrun checks. Documentation-only examples cannot be claimed as tested against an implementation.
-
 
 ## Releases and distribution
 

@@ -1,16 +1,16 @@
 # Built-in rules
 
-> Proposed first-release behavior. No rules are implemented yet. Only rules selected in central configuration run.
+> Implemented built-in behavior for the unreleased first version. Only rules selected in central configuration run.
 
 ## `actions/full-sha`
 
-| Property | Contract |
-| --- | --- |
-| Version | Rule version will be recorded in reports; released version not assigned yet. |
-| Resource type | `github/repository` |
-| Default severity | `high` |
-| Parameters | None |
-| Required access | Contents read for default-branch files. |
+| Property         | Contract                                                           |
+| ---------------- | ------------------------------------------------------------------ |
+| Version          | Implementation rule version `1.0.0`; no Action release exists yet. |
+| Resource type    | `github/repository`                                                |
+| Default severity | `high`                                                             |
+| Parameters       | None                                                               |
+| Required access  | Contents read for default-branch files.                            |
 
 Require remote GitHub Action and reusable workflow references to use a 40-character hexadecimal commit SHA. Inspect workflow step `uses`, job-level reusable workflow `uses`, and `uses` inside composite `action.yml` or `action.yaml` files in the scanned repository. For example:
 
@@ -28,13 +28,13 @@ Central policy ignores target suppression comments. Workflow lockfiles do not sa
 
 ## `repository/required-reviews`
 
-| Property | Contract |
-| --- | --- |
-| Resource type | `github/repository` |
-| Default severity | `medium` |
-| Parameter | `minimum`: integer from 1 through 6, default `1`. |
-| Evidence | Classic protection on the default branch, observed through GitHub API. |
-| Required access | Administration read for fine-grained PATs and sufficient account privileges; classic PAT scope and endpoint access must also be sufficient. |
+| Property         | Contract                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Resource type    | `github/repository`                                                                                                                         |
+| Default severity | `medium`                                                                                                                                    |
+| Parameter        | `minimum`: integer from 1 through 6, default `1`.                                                                                           |
+| Evidence         | Classic protection on the default branch, observed through GitHub API.                                                                      |
+| Required access  | Administration read for fine-grained PATs and sufficient account privileges; classic PAT scope and endpoint access must also be sufficient. |
 
 ```yaml
 rules:
@@ -45,4 +45,6 @@ rules:
 
 Evaluate whether established classic default-branch protection requires at least `minimum` approving reviews. An empty repository without a default branch is `not-applicable`. Confirmed protection below the minimum, or confirmed absence of classic protection with established access, fails. Ambiguous access is an error; a 404 alone does not prove absence of protection.
 
-This rule does **not** calculate effective rulesets, bypass permissions, enterprise enforcement, or the complete security posture of branch changes. A repository protected only by rulesets can fail this classic-protection check even if its effective review requirements are strong. Select this rule only when this scope matches your organizational policy; do not enable it universally by default. See [authentication](authentication.md) for the distinction between token permission and account privilege.
+This rule does **not** calculate effective rulesets, bypass permissions, enterprise enforcement, or the complete security posture of branch changes. A repository protected only by rulesets will not be treated as satisfying this classic-protection check; depending on available API evidence, it can produce an error or a failure even if its effective review requirements are strong. Select this rule only when this scope matches your organizational policy; do not enable it universally by default. See [authentication](authentication.md) for the distinction between token permission and account privilege.
+
+A 404 from the classic-protection endpoint is treated as confirmed absence only when a separate readable branch response establishes `protected: false`. Account administrator status alone does not prove the token has permission to read the protection endpoint. Otherwise the result is an error. A confirmed empty-repository API response yields `not-applicable` even if repository metadata includes a default branch name.
