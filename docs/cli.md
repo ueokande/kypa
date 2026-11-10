@@ -35,7 +35,7 @@ For example, the future Action tag `v1.0.0` corresponds to npm `@kypa/cli@1.0.0`
 
 ## Credentials and output
 
-The only CLI credential source is `KYCA_GITHUB_TOKEN` in the process environment. There is no token argument and no automatic `.env` loading. Inject the value securely; never include literal tokens in a command or policy. Logs go to stderr. Structured output is written through configured reporters rather than mixed into logs.
+The only CLI credential source is `KYPA_GITHUB_TOKEN` in the process environment. There is no token argument and no automatic `.env` loading. Inject the value securely; never include literal tokens in a command or policy. Logs go to stderr. Structured output is written through configured reporters rather than mixed into logs.
 
 ## Exit codes
 

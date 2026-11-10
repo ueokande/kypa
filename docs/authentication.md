@@ -2,7 +2,7 @@
 
 > Planned first-release authentication contract; Kypa is not available yet.
 
-Kypa reads repositories using a PAT provided as `KYCA_GITHUB_TOKEN` locally or passed to the proposed Action from a central `KYCA_PAT` Actions secret. There is no token CLI argument and no automatic `.env` loading. Provide local values through secure environment injection. Never put literal tokens in commands or policy files. Target repositories require no Kypa installation, but all normal access controls apply.
+Kypa reads repositories using a PAT provided as `KYPA_GITHUB_TOKEN` locally or passed to the proposed Action from a central `KYPA_PAT` Actions secret. There is no token CLI argument and no automatic `.env` loading. Provide local values through secure environment injection. Never put literal tokens in commands or policy files. Target repositories require no Kypa installation, but all normal access controls apply.
 
 ## Choose a token
 
@@ -21,7 +21,7 @@ Check current GitHub endpoint documentation when issuing a token: permission and
 
 ## Central Actions execution
 
-Create `KYCA_PAT` in the central repository's Actions secrets and pass it to the Action's required `token` input. Ordinary GITHUB_TOKEN is scoped to its workflow repository and must not be assumed sufficient for reading other internal repositories. A GitHub App installation is not required by Kypa's initial workflow.
+Create `KYPA_PAT` in the central repository's Actions secrets and pass it to the Action's required `token` input. Ordinary GITHUB_TOKEN is scoped to its workflow repository and must not be assumed sufficient for reading other internal repositories. A GitHub App installation is not required by Kypa's initial workflow.
 
 Keep collection permissions in the scan job and Pages write/OIDC permissions in the deployment job. The generated site must never contain the PAT, raw API payloads, or unnecessary source text. Browsers only receive static results; they never hold the PAT or call GitHub with it.
 

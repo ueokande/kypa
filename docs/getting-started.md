@@ -39,7 +39,7 @@ reporters:
       basePath: /
 ```
 
-The [configuration reference](configuration.md) explains defaults, exceptions, and target filtering. Arrange for your shell's secure environment injection or secret manager to provide `KYCA_GITHUB_TOKEN`. Do not paste literal tokens into commands, policy files, source code, or logs. The `KYCA_` spelling is intentional in this proposed contract. Kypa will not automatically load `.env` files.
+The [configuration reference](configuration.md) explains defaults, exceptions, and target filtering. Arrange for your shell's secure environment injection or secret manager to provide `KYPA_GITHUB_TOKEN`. Do not paste literal tokens into commands, policy files, source code, or logs. Kypa will not automatically load `.env` files.
 
 ## Validate and scan
 
@@ -70,6 +70,6 @@ Open the local server in your own browser. This example uses `basePath: /`; a pr
 
 ## Automate
 
-Use the complete [GitHub Actions workflow](github-action.md) for daily and manual scans. Store the PAT as the central repository's `KYCA_PAT` Actions secret. Configure Pages with GitHub Actions as its build source and enforce restricted visibility before the first deployment. The PAT is for collection; deployment uses GITHUB_TOKEN/OIDC separately.
+Use the complete [GitHub Actions workflow](github-action.md) for daily and manual scans. Store the PAT as the central repository's `KYPA_PAT` Actions secret. Configure Pages with GitHub Actions as its build source and enforce restricted visibility before the first deployment. The PAT is for collection; deployment uses GITHUB_TOKEN/OIDC separately.
 
 Use the Action release tag or its reviewed full release-commit SHA, rather than `master` or the source commit SHA. The tagged release commit includes compiled Action JavaScript; the development branch does not. Built-in Action use needs no pnpm installation or Kypa compilation in your workflow.

@@ -16,7 +16,7 @@ Use a published release tag or, preferably, its reviewed full release-commit SHA
 
 | Input | Required | Default |
 | --- | --- | --- |
-| `token` | Yes | None; pass the central `KYCA_PAT` secret. |
+| `token` | Yes | None; pass the central `KYPA_PAT` secret. |
 | `config` | No | `kypa.yaml` |
 | `fail-on` | No | `never`; same policies as the CLI. |
 
@@ -35,7 +35,7 @@ The Action also writes an aggregate job summary. Do not assume outputs exist aft
 
 In the central execution repository, set Pages build source to **GitHub Actions** and explicitly configure private/access-controlled Pages visibility under your enterprise's supported settings. Verify access with an authorized viewer and an unauthorized viewer. Internal repository visibility alone is insufficient: Pages is not automatically private. Deployment does not configure visibility. Do not publish until the intended restriction is established.
 
-Create the `KYCA_PAT` Actions secret as described in [authentication](authentication.md). Ensure its owner can read targets and selected settings endpoints. Use the PAT only in collection; deployment uses the workflow's GITHUB_TOKEN and OIDC.
+Create the `KYPA_PAT` Actions secret as described in [authentication](authentication.md). Ensure its owner can read targets and selected settings endpoints. Use the PAT only in collection; deployment uses the workflow's GITHUB_TOKEN and OIDC.
 
 ## Complete illustrative workflow
 
@@ -71,7 +71,7 @@ jobs:
         id: kypa
         uses: ueokande/Kypa@v1.0.0
         with:
-          token: ${{ secrets.KYCA_PAT }}
+          token: ${{ secrets.KYPA_PAT }}
           config: kypa.yaml
           fail-on: never
       - name: Upload generated site
