@@ -91,3 +91,28 @@ test('release preparation never changes a checked-out source branch', async () =
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('detached');
   expect(git('rev-parse', 'HEAD')).toBe(source);
 });
+
+test('publication retries reuse an identical tag without moving it and reject changed builds', async () => {
+  const { directory, git, source } = await fixture();
+  const first = await prepareRelease(directory, 'v0.1.0');
+  git('checkout', '--detach', source);
+  await mkdir(join(directory, 'dist/action'), { recursive: true });
+  await mkdir(join(directory, 'dist/dashboard'), { recursive: true });
+  await writeFile(
+    join(directory, 'dist/action/index.js'),
+    '/* fixture action */',
+  );
+  await writeFile(
+    join(directory, 'dist/dashboard/index.html'),
+    '<html></html>',
+  );
+  expect(
+    await prepareRelease(directory, 'v0.1.0', { reuseExisting: true }),
+  ).toEqual(first);
+  expect(git('rev-parse', 'HEAD')).toBe(source);
+  await writeFile(join(directory, 'dist/action/index.js'), 'changed build');
+  await expect(
+    prepareRelease(directory, 'v0.1.0', { reuseExisting: true }),
+  ).rejects.toThrow('differ');
+  expect(git('rev-parse', 'v0.1.0^{commit}')).toBe(first.commit);
+});

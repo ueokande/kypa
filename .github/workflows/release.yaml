@@ -1,9 +1,12 @@
-name: Prepare Action release
+name: Publish Action release
 on:
+  pull_request:
+    types: [closed]
+    branches: [master]
   workflow_dispatch:
     inputs:
-      version:
-        description: Exact stable tag matching package.json (for example v0.1.0)
+      release-pr:
+        description: Merged Release PR number to retry publication
         required: true
         type: string
 permissions:
@@ -13,14 +16,41 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: github.ref == 'refs/heads/master'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'release-please--branches--master' &&
+       contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      source: ${{ steps.release.outputs.source }}
+      pr: ${{ steps.release.outputs.pr }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+      - name: Validate merged Release PR
+        id: release
+        run: node scripts/release-metadata.ts
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ steps.release.outputs.source }}
+          persist-credentials: false
+      - name: Read released version
+        id: version
+        run: node scripts/release-version.ts
       - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -42,12 +72,16 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
+      pull-requests: write
+      issues: write
     env:
-      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_VERSION: ${{ needs.build.outputs.version }}
+      RELEASE_PR: ${{ needs.build.outputs.pr }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.build.outputs.source }}
           fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -60,3 +94,14 @@ jobs:
         run: node scripts/prepare-release.ts
       - name: Push only the exact release tag
         run: git push origin "refs/tags/$RELEASE_VERSION"
+      - name: Publish GitHub Release
+        run: |
+          if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
+          fi
+      - name: Mark Release PR as published
+        run: |
+          if ! gh api "repos/$GITHUB_REPOSITORY/labels/autorelease%3A%20tagged" >/dev/null 2>&1; then
+            gh label create 'autorelease: tagged' --color 0e8a16 --description 'Published Action release'
+          fi
+          gh pr edit "$RELEASE_PR" --remove-label 'autorelease: pending' --add-label 'autorelease: tagged'

@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 export async function prepareRelease(
   directory: string,
   version: string,
+  options: { reuseExisting?: boolean } = {},
 ): Promise<{ source: string; commit: string }> {
   if (!/^v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$/.test(version))
     throw new Error('An exact stable version tag is required.');
@@ -30,7 +31,10 @@ export async function prepareRelease(
     '--quiet',
     `refs/tags/${version}`,
   ]);
-  if (existing.status !== 1)
+  if (
+    existing.status !== 1 &&
+    !(existing.status === 0 && options.reuseExisting)
+  )
     throw new Error('Tag already exists or could not be checked.');
   const head = spawnSync('git', [
     '-C',
@@ -61,6 +65,47 @@ export async function prepareRelease(
   await walk('dist/dashboard');
   if (!hashes['dist/action/index.js'] || !hashes['dist/dashboard/index.html'])
     throw new Error('Action or dashboard build is missing.');
+  if (existing.status === 0) {
+    const previous = JSON.parse(
+      git('show', `${version}:dist/provenance.json`),
+    ) as { version: string; source: string; sha256: Record<string, string> };
+    const previousPaths = git(
+      'ls-tree',
+      '-r',
+      '--name-only',
+      version,
+      '--',
+      'dist/action',
+      'dist/dashboard',
+    )
+      .split('\n')
+      .sort();
+    if (
+      previous.version !== version ||
+      previous.source !== source ||
+      JSON.stringify(previousPaths) !==
+        JSON.stringify(Object.keys(hashes).sort())
+    )
+      throw new Error('Existing tag has different source or artifacts.');
+    for (const [path, hash] of Object.entries(hashes)) {
+      const content = execFileSync('git', [
+        '-C',
+        directory,
+        'show',
+        `${version}:${path}`,
+      ]);
+      if (
+        previous.sha256[path] !== hash ||
+        createHash('sha256').update(content).digest('hex') !== hash
+      )
+        throw new Error(
+          'Existing tag artifacts differ from the verified build.',
+        );
+    }
+    if (git('rev-parse', `${version}^`) !== source)
+      throw new Error('Existing tag has an unexpected parent.');
+    return { source, commit: git('rev-parse', `${version}^{commit}`) };
+  }
   await writeFile(
     join(directory, 'dist/provenance.json'),
     `${JSON.stringify({ version, source, sha256: hashes }, null, 2)}
