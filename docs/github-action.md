@@ -4,13 +4,11 @@
 
 The initial supported entry point is the root GitHub Action in `ueokande/kypa`. The released Action bundles the scan runner, built-in components, and runtime dependencies. Consumers do not need pnpm, a consumer-side build, or an npm installation.
 
-## Execution and release tags
+## Choose an Action reference
 
-The Action reads workflow inputs and calls the common scan runner directly. The runner validates policy, collects evidence, evaluates rules, and generates reports. The Action translates the result into workflow outputs, the aggregate job summary, and step success or failure. No CLI executable is required. The Action and runner are maintained in the same repository.
+Once a release exists, use its published version tag, such as the illustrative `ueokande/kypa@v1.0.0`, or preferably pin its reviewed full release-commit SHA. Review the release notes and recorded source provenance when selecting a version.
 
-The main development branch (currently `master`) contains TypeScript source and does not track generated JavaScript. A release tag such as the future `v1.0.0` points to a separate release commit containing both that source and compiled Action JavaScript. The root `action.yml` must reference an entry point present in that tagged commit. A GitHub Release asset alone is insufficient for a JavaScript Action invoked with `uses`.
-
-Use a published release tag or, preferably, its reviewed full release-commit SHA. `uses: ueokande/kypa@master` is not a supported execution path because the development branch lacks the compiled entry point. A source commit SHA is also not interchangeable with the corresponding release-commit SHA. Exact version tags are immutable; a moving `v1` alias is not part of the initial documented contract. See [Releases and distribution](releases.md) for build provenance and release-ref selection.
+The development branch (`master`) does not contain compiled Action JavaScript and is not a supported runnable reference. Use the release commit rather than its underlying source commit. Exact version tags remain fixed; a moving `v1` alias is not part of the initial documented contract.
 
 ## Inputs and outputs
 

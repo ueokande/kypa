@@ -14,11 +14,10 @@ The initial release supports bundled providers, rules, and reporters. YAML selec
 | [Authentication](authentication.md) | Choose a PAT and understand access requirements. |
 | [Configuration](configuration.md) | Define targets, rules, and output. |
 | [GitHub Action](github-action.md) | Schedule scans and publish private results. |
-| [Releases and distribution](releases.md) | Choose Action release tags and verify their source provenance. |
 | [Rules](rules.md) | Understand built-in checks and their limits. |
 | [Results](results.md) | Interpret evaluations, coverage, and freshness. |
 | [Troubleshooting](troubleshooting.md) | Diagnose access, configuration, and publication problems. |
 
-The GitHub Action calls a common scan runner directly within the same repository. The main development branch retains TypeScript source; versioned Action release commits additionally contain compiled JavaScript. The supported initial entry point is GitHub Actions; no standalone CLI or npm distribution is planned for the initial release. No release exists yet.
+The supported initial entry point is GitHub Actions; no standalone CLI or npm distribution is planned for the initial release. Use a published Action release tag or its reviewed full commit SHA as explained in the [Action guide](github-action.md). No release exists yet.
 
 The first release excludes scan history, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server. Internal repository visibility does not automatically make Pages private. No OSS license has been selected. Development constraints belong in [AGENTS.md](../AGENTS.md).

@@ -56,3 +56,24 @@ Violations must not prevent report generation or publication. Fatal configuratio
 Use the PAT only for collection. Use GITHUB_TOKEN and OIDC for Pages deployment, separating scan and deployment permissions. Never publish secrets, raw API responses, or unnecessary source content. Escape untrusted rendered data.
 
 Use fixture-based Vitest tests for rules, collection/evaluation failures, and reporters. Validate formatting, lint, types, tests, and relevant builds. Distinguish failed checks from unrun checks. Documentation-only examples cannot be claimed as tested against an implementation.
+
+
+## Releases and distribution
+
+These are planned maintainer requirements, not an implemented release workflow. Keep the Action and common scan runner in `ueokande/kypa`; the initial distribution is the root GitHub Action, without a standalone CLI or npm publication.
+
+The main development branch (currently `master`) tracks TypeScript source, tests, build configuration, and root `action.yml`, but no generated JavaScript. Exact release tags such as the illustrative `v1.0.0` point to separate release commits retaining the selected source plus the compiled Action bundle and runtime assets. The release version identifies that bundle and its recorded source revision. The distinction remains if the main branch is renamed.
+
+The planned GitHub Actions release workflow prepares artifacts before creating the public tag:
+
+1. Select and record an exact source commit and release version. Use the repository's pinned toolchain and frozen pnpm lockfile once implementation begins.
+2. Run formatting, lint, separate type checking, fixture-based tests, and relevant builds against that source. Build the Action and shared packages with Rslib and the dashboard with Rsbuild.
+3. In an isolated temporary release branch or checkout, retain the selected source and add the compiled Action bundle and required assets. Verify that the root `action.yml` references an existing compiled entry point and that the bundled Action works without consumer dependency installation. Exercise the bundled Action end to end as well as running source-level checks.
+4. Create a release commit containing those generated files. Record the original source SHA and version in release metadata so the generated commit can be traced back to reviewed source.
+5. Create the exact tag, such as `v1.0.0`, on that release commit and push it. Record the source SHA, release-commit SHA, and validation results in the release notes.
+
+The source commit and release commit have different SHAs. Creating the final tag is a release-workflow output: do not first tag the source commit and later move that same tag to add JavaScript. Generated files need not be merged back into the development branch. A GitHub Release attachment does not add files to the Git tree used by `uses`.
+
+Verify the pushed tag and its compiled entry point before announcing availability. If publication fails, preserve existing exact tags and repair the failed step without silently moving a released tag. Detailed workflow implementation, runtime pins, and artifact paths will be chosen when the software is implemented.
+
+Document published release tags and recommend reviewed full release-commit SHA pinning to consumers. Exact release tags are immutable; a moving `v1` alias is not part of the initial contract. Keep build, provenance, tagging, and publication instructions here; keep `docs/` focused on configuring and using the released Action. No release currently exists.

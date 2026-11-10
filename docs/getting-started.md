@@ -55,4 +55,4 @@ The example workflow uploads `site/` and deploys it to Pages. JSON remains a run
 
 Check the Action's job summary, scan outputs, deployment status, and dashboard timestamp. Inspect [coverage and errors](results.md) even when the workflow succeeds: `fail-on: never` allows violations and partial reports to publish. Fatal failures prevent deployment and leave the previous result visible.
 
-The example schedule requests daily scans at 00:17 UTC / 09:17 JST, with best-effort scheduling on the default branch. Monitor workflow failures and PAT expiry so stale results are not mistaken for a current scan. See [troubleshooting](troubleshooting.md) and [releases](releases.md).
+The example schedule requests daily scans at 00:17 UTC / 09:17 JST, with best-effort scheduling on the default branch. Monitor workflow failures and PAT expiry so stale results are not mistaken for a current scan. See [troubleshooting](troubleshooting.md) for diagnosis and the [Action guide](github-action.md) for release-ref selection.
