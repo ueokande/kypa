@@ -1,0 +1,29 @@
+{
+  "name": "kypa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "rslib build",
+    "build:action": "rslib build",
+    "build:dashboard": "pnpm --filter @kypa/pages build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.6",
+    "@rslib/core": "1.0.6",
+    "@types/jsdom": "30.0.0",
+    "@types/node": "^24.0.0",
+    "jsdom": "31.0.0",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}
