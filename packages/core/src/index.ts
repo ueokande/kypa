@@ -9,6 +9,7 @@ import {
   type Rule,
   resourceKey,
 } from '@kypa/sdk';
+import packageInfo from '../../../package.json' with { type: 'json' };
 
 export { loadPolicy, matchesPattern, parsePolicy, within } from './config.js';
 
@@ -55,7 +56,7 @@ export async function runScan(
       id: (dependencies.runId ?? randomUUID)(),
       startedAt,
       completedAt: startedAt,
-      toolVersion: '0.1.0',
+      toolVersion: packageInfo.version,
       policyVersion: 1,
       policyDigest: dependencies.policyDigest,
       status: 'complete',

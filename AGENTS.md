@@ -59,7 +59,7 @@ Use fixture-based Vitest tests for rules, collection/evaluation failures, and re
 
 ## Releases and distribution
 
-These are planned maintainer requirements, not an implemented release workflow. Keep the Action and common scan runner in `ueokande/kypa`; the initial distribution is the root GitHub Action, without a standalone CLI or npm publication.
+The manual Prepare Action release workflow implements the following maintainer process. It has not been run to publish a real tag. Keep the Action and common scan runner in `ueokande/kypa`; the initial distribution is the root GitHub Action, without a standalone CLI or npm publication.
 
 The main development branch (currently `master`) tracks TypeScript source, tests, build configuration, and root `action.yml`, but no generated JavaScript. Exact release tags such as the illustrative `v1.0.0` point to separate release commits retaining the selected source plus the compiled Action bundle and runtime assets. The release version identifies that bundle and its recorded source revision. The distinction remains if the main branch is renamed.
 
@@ -76,3 +76,5 @@ The source commit and release commit have different SHAs. Creating the final tag
 Verify the pushed tag and its compiled entry point before announcing availability. If publication fails, preserve existing exact tags and repair the failed step without silently moving a released tag. Detailed workflow implementation, runtime pins, and artifact paths will be chosen when the software is implemented.
 
 Document published release tags and recommend reviewed full release-commit SHA pinning to consumers. Exact release tags are immutable; a moving `v1` alias is not part of the initial contract. Keep build, provenance, tagging, and publication instructions here; keep `docs/` focused on configuring and using the released Action. No release currently exists.
+
+After merging reviewed source into master, maintainers can run Prepare Action release with an exact stable tag matching the root package version (for example v0.1.0). The read-only build job runs pnpm check and uploads compiled artifacts. A separate job with contents: write checks out the same source SHA, downloads artifacts from that run, prepares an annotated tag on a generated commit, and pushes only that tag. Source branches are not updated. The preparation script requires a detached checkout and rejects dirty source, mismatched versions, existing tags, missing artifacts, and symlink artifacts. It records source identity and SHA-256 artifact hashes in dist/provenance.json. Update package versions before dispatching a different release version. The workflow currently accepts dispatches from master only. Preparing a tag does not create a GitHub Release announcement or change Pages visibility. Do not execute publication as part of ordinary development verification.
