@@ -29,4 +29,4 @@ Keep collection permissions in the scan job and Pages write/OIDC permissions in 
 
 Use the least access needed for selected rules. Rotate the PAT before expiry, update the central secret, and test a fresh scan. Revoke old credentials after the replacement works; respond promptly to suspected exposure. Ensure scheduled scans are monitored so an expired token does not leave an apparently current dashboard.
 
-Safe errors should identify the operation and affected resource without printing authorization headers or tokens. A GitHub 404 can mean either an absent resource or insufficient access. Do not interpret every 404 as “no branch protection”; uncertain authorization is an error. See [troubleshooting](troubleshooting.md).
+Safe errors should identify the operation and affected resource without printing authorization headers or tokens. A GitHub 404 can mean either an absent resource or insufficient access. Do not interpret every 404 as “no branch protection”; uncertain authorization is an error.

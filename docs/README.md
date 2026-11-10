@@ -16,7 +16,6 @@ The initial release supports bundled providers, rules, and reporters. YAML selec
 | [GitHub Action](github-action.md) | Schedule scans and publish private results. |
 | [Rules](rules.md) | Understand built-in checks and their limits. |
 | [Results](results.md) | Interpret evaluations, coverage, and freshness. |
-| [Troubleshooting](troubleshooting.md) | Diagnose access, configuration, and publication problems. |
 
 The supported initial entry point is GitHub Actions; no standalone CLI or npm distribution is planned for the initial release. Use a published Action release tag or its reviewed full commit SHA as explained in the [Action guide](github-action.md). No release exists yet.
 
