@@ -45,4 +45,4 @@ Consumers must check supported schema versions, completeness, and evaluation out
 
 The Pages reporter writes HTML, assets, and display data into its configured directory using `basePath` for deployed URLs. Routing must work on static hosting without a custom server or server-side API. Untrusted repository names, file paths, and messages must be escaped when rendered. Browser clients receive static data and never hold the collection PAT.
 
-Violations and partial results can publish with `--fail-on never`. Fatal scan/output failures block publication even if files were partially written. A failed deployment preserves the previous result; always inspect the scan timestamp and workflow state. A loading site is not proof of a fresh successful scan. See [GitHub Action](github-action.md).
+Violations and partial results can publish with the Action input `fail-on: never`. Fatal scan/output failures block publication even if files were partially written. A failed deployment preserves the previous result; always inspect the scan timestamp and workflow state. A loading site is not proof of a fresh successful scan. See [GitHub Action](github-action.md).

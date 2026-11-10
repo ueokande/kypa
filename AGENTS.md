@@ -4,7 +4,7 @@ Kypa means **Keep Your Policies Aligned**. It scans resources against centrally 
 
 ## Language and documentation
 
-Write repository documentation, code examples, and comments in English. Keep README short. Treat `docs/` as an OSS user manual, not an internal design notebook or development diary. Label concrete interfaces as planned first-release contracts until implemented and released. Never imply proposed packages, SDK helpers, CLI commands, or Action tags are available. No OSS license has been selected; do not invent or add one.
+Write repository documentation, code examples, and comments in English. Keep README short. Treat `docs/` as an OSS user manual, not an internal design notebook or development diary. Label concrete interfaces as planned first-release contracts until implemented and released. Never imply unimplemented interfaces or Action tags are available. No OSS license has been selected; do not invent or add one.
 
 ## Scope
 
@@ -27,9 +27,9 @@ Keep these components separate through explicit, versioned interfaces:
 | Rule | Declare resource types, required evidence, version, default severity, and runtime parameter schema. Evaluate collected evidence without credentials or network calls. |
 | Core / runner | Validate policy, resolve built-in components and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, evaluate rules, and apply exceptions. |
 | Reporter | Consume the common scan report. Initially JSON and static Pages; adding formats must not change rules. |
-| CLI / Action | CLI owns orchestration; the GitHub Action wraps the CLI. |
+| CLI / Action | Internal CLI owns orchestration; the GitHub Action wraps it and is the initial supported user entry point. |
 
-Start with SDK, core, CLI, GitHub provider, GitHub rules, JSON reporter, and Pages reporter/dashboard packages. Avoid circular dependencies and unnecessary packages.
+Start with SDK, core, CLI, GitHub provider, GitHub rules, JSON reporter, and Pages reporter/dashboard packages. Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not distribute the CLI through npm or document standalone CLI installation/use; focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and internal execution layer in the same repository.
 
 Keep the source structure pluggable through explicit internal provider, rule, and reporter interfaces and dependency injection. Register built-in components centrally so the runner does not depend on individual implementations. Keep credentials and collection in providers, pure evidence evaluation in rules, and common-report rendering in reporters. Validate runtime policy parameters and reject duplicate component IDs. Preserve generic resource identity and versioned evidence so future providers do not require a repository-only model.
 

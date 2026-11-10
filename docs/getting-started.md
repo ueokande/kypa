@@ -1,25 +1,22 @@
 # Getting started
 
-> Planned first-release workflow. Kypa and `@kypa/cli` are not implemented or published; the commands below cannot be used today.
+> Planned first-release workflow. Kypa is not implemented or released; the Action references in this manual are illustrative and cannot be used today.
 
 ## Prepare central execution
 
-Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions and privately published Pages are available under your enterprise plan and organization policy. Configure Pages access before publishing sensitive results.
+Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions and privately published Pages are available under your enterprise plan and organization policy.
 
-You need a PAT with existing access to all intended repositories and the permissions required by selected rules. Organization approval or SSO authorization may be required. Follow [authentication](authentication.md) before scanning. For local development, use a supported Node.js LTS and pnpm; compatible supported versions will be chosen when implementation begins.
+The initial supported entry point is the root GitHub Action in `ueokande/kypa`. No CLI is distributed through npm. You do not need a package manifest, pnpm, a local Kypa installation, or a consumer-side build to use the released Action.
 
-## Install the proposed CLI
+## Configure authentication and Pages
 
-Once a release exists, replace `<released-version>` with an actual reviewed release. In your central repository:
+Create a PAT with existing access to the intended repositories and the permissions required by selected rules. Organization approval or SSO authorization may be required. Follow [authentication](authentication.md) and store the PAT securely as the central repository's `KYPA_PAT` Actions secret. Never place literal tokens in commands, policy files, workflows, or source.
 
-```sh
-pnpm init
-pnpm add -D @kypa/cli@<released-version>
-```
+Set Pages build source to GitHub Actions and configure restricted Pages visibility before deployment. Internal repository visibility alone does not make Pages private. Verify the intended viewer restrictions before publishing sensitive results. Collection uses the PAT; Pages deployment uses GITHUB_TOKEN/OIDC separately.
 
-Run `pnpm init` only if no package manifest exists. Commit the resulting package manifest and `pnpm-lock.yaml` for repeatable installation. The placeholder is not an available package version. The released npm package will contain compiled JavaScript; consumers do not build Kypa from TypeScript. For example, a future `@kypa/cli@1.0.0` will correspond to the Action release tag `v1.0.0` from the same source revision. See [Releases and distribution](releases.md).
+## Create the policy
 
-Create `kypa.yaml`:
+Commit `kypa.yaml` in the central repository:
 
 ```yaml
 version: 1
@@ -39,37 +36,23 @@ reporters:
       basePath: /
 ```
 
-The [configuration reference](configuration.md) explains defaults, exceptions, and target filtering. Arrange for your shell's secure environment injection or secret manager to provide `KYPA_GITHUB_TOKEN`. Do not paste literal tokens into commands, policy files, source code, or logs. Kypa will not automatically load `.env` files.
+Replace `example-org` with your organization. This example uses `basePath: /`; for a project site, use the actual deployment path, such as `/kypa-monitor/`. See [configuration](configuration.md) for target selection, parameters, severity, exceptions, and output paths.
 
-## Validate and scan
+## Add the workflow and run it
 
-After implementation and release, run:
+Copy the complete [GitHub Actions workflow](github-action.md) into `.github/workflows/kypa.yaml`. Once a release exists, select its tag or reviewed full release-commit SHA. The tagged commit contains compiled Action JavaScript; the development branch and its source commit SHA are not supported runnable Action references.
 
-```sh
-pnpm exec kypa validate --config kypa.yaml
-pnpm exec kypa rules list --config kypa.yaml
-pnpm exec kypa scan --config kypa.yaml --fail-on never
-```
+Commit the policy and workflow to the central repository's default branch. Trigger `workflow_dispatch` from the Actions UI. The Action validates configuration, discovers targets, collects evidence, evaluates selected rules, applies exceptions, and writes `report/report.json` and `site/` on the runner. Validation does not establish remote access; collection must succeed separately.
 
-Validation checks local configuration without GitHub requests; it does not prove remote access. Scanning discovers targets, collects evidence, evaluates selected rules, applies exceptions, and writes `report/report.json` and `site/`. Inspect [coverage and errors](results.md) even when the command exits zero.
-
-Keep generated output out of Git. Add these entries to your central repository's `.gitignore`:
+The example workflow uploads `site/` and deploys it to Pages. JSON remains a runner output unless you separately retain it using access-controlled storage or an appropriately restricted artifact. Do not expose reports through public artifacts or commit generated output. If generated directories are ever copied into the central checkout, ignore them in Git:
 
 ```gitignore
 /report/
 /site/
 ```
 
-For an internal local preview with Python 3 available:
+## Inspect the result and keep it current
 
-```sh
-python3 -m http.server 8000 --bind 127.0.0.1 --directory site
-```
+Check the Action's job summary, scan outputs, deployment status, and dashboard timestamp. Inspect [coverage and errors](results.md) even when the workflow succeeds: `fail-on: never` allows violations and partial reports to publish. Fatal failures prevent deployment and leave the previous result visible.
 
-Open the local server in your own browser. This example uses `basePath: /`; a project Pages path requires the appropriate mount path when previewing. Do not expose sensitive output through a public preview or commit generated reports.
-
-## Automate
-
-Use the complete [GitHub Actions workflow](github-action.md) for daily and manual scans. Store the PAT as the central repository's `KYPA_PAT` Actions secret. Configure Pages with GitHub Actions as its build source and enforce restricted visibility before the first deployment. The PAT is for collection; deployment uses GITHUB_TOKEN/OIDC separately.
-
-Use the Action release tag or its reviewed full release-commit SHA, rather than `master` or the source commit SHA. The tagged release commit includes compiled Action JavaScript; the development branch does not. Built-in Action use needs no pnpm installation or Kypa compilation in your workflow.
+The example schedule requests daily scans at 00:17 UTC / 09:17 JST, with best-effort scheduling on the default branch. Monitor workflow failures and PAT expiry so stale results are not mistaken for a current scan. See [troubleshooting](troubleshooting.md) and [releases](releases.md).

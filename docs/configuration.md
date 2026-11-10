@@ -2,7 +2,7 @@
 
 > Proposed first-release YAML contract. No parser or runtime is available yet.
 
-Use `kypa.yaml` by default or select another file with `--config`. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
+Use `kypa.yaml` by default or select another file with the Action's `config` input. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
 
 ## Complete example
 

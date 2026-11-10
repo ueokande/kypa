@@ -1,12 +1,11 @@
 # Troubleshooting
 
-> Troubleshooting guidance for the proposed first release. Kypa itself is not implemented; unavailable packages, commands, and Action tags today are expected, not installation defects.
+> Troubleshooting guidance for the proposed first release. Kypa itself is not implemented; unavailable Action tags today are expected, not installation defects.
 
 | Symptom | Checks and next action |
 | --- | --- |
 | Action entry point is missing when using a branch or SHA | Use an actual published release tag or its release-commit SHA. The main development branch contains TypeScript without generated JS; a source SHA or GitHub Release asset is not a substitute for a compiled Action commit. |
-| CLI and Action versions differ | Match npm version `1.0.0` with Action tag `v1.0.0` once released, and check the recorded source revision. The Action uses its bundled CLI rather than a locally installed npm CLI. |
-| Authentication fails | Check PAT expiry, organization approval, allowed token policies, classic-token SSO authorization, and the central `KYPA_PAT` secret name. Confirm secure local `KYPA_GITHUB_TOKEN` injection without printing its value. Rotate through secure settings. |
+| Authentication fails | Check PAT expiry, organization approval, allowed token policies, classic-token SSO authorization, and the central `KYPA_PAT` secret name. Confirm that the Action token input references the intended secret without printing its value. Rotate through secure settings. |
 | Some repositories are missing | Check the token's resource owner, selected repositories, account access, organization membership, fork/archive filters, exclusions, and discovery coverage. Compare against an independent inventory; inaccessible repositories may be invisible. |
 | Files work but settings fail | Contents read does not imply Administration read or sufficient account privileges for protection endpoints. Check the selected rule's requirements. |
 | GitHub returns 404 | Distinguish absent data from unauthorized access. Verify identity and endpoint permissions independently; do not turn every 404 into “no protection” or a passing result. |
@@ -22,8 +21,8 @@
 
 ## Safe diagnosis
 
-Start with local validation and the rule list, then examine safe stderr logs, run identity, coverage, and workflow job status. Local validation does not test GitHub access. Determine whether failure is local configuration, global authentication, an individual target operation, or report output before retrying.
+Start with the Action validation errors and selected built-in rule IDs, then examine safe stderr logs, run identity, coverage, and workflow job status. Configuration validation does not test GitHub access. Determine whether failure is local configuration, global authentication, an individual target operation, or report output before retrying.
 
 Never dump the process environment, authorization headers, PATs, raw API responses, or internal source files into logs or public issues. Redact repository names, source paths, user identities, organization details, and sensitive findings as needed. Share a minimal sanitized policy, tool/rule versions, safe error text, and reproducible fixture rather than credentials or private payloads.
 
-Do not add blanket `continue-on-error`, suppress errors with exceptions, or publish partially written files to get a green deployment. Use `fail-on: never` for publishing generated violation/partial reports while preserving fatal failures. See [CLI exits](cli.md), [authentication](authentication.md), and [publication](github-action.md).
+Do not add blanket `continue-on-error`, suppress errors with exceptions, or publish partially written files to get a green deployment. Use `fail-on: never` for publishing generated violation/partial reports while preserving fatal failures. See [Action failure policies](github-action.md), [authentication](authentication.md), and [publication](github-action.md).
