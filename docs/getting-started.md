@@ -4,7 +4,7 @@
 
 ## Prepare central execution
 
-Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy, trusted plugins, and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions and privately published Pages are available under your enterprise plan and organization policy. Configure Pages access before publishing sensitive results.
+Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions and privately published Pages are available under your enterprise plan and organization policy. Configure Pages access before publishing sensitive results.
 
 You need a PAT with existing access to all intended repositories and the permissions required by selected rules. Organization approval or SSO authorization may be required. Follow [authentication](authentication.md) before scanning. For local development, use a supported Node.js LTS and pnpm; compatible supported versions will be chosen when implementation begins.
 
@@ -51,7 +51,7 @@ pnpm exec kypa rules list --config kypa.yaml
 pnpm exec kypa scan --config kypa.yaml --fail-on never
 ```
 
-Validation loads trusted plugins and checks local configuration without GitHub requests; it does not prove remote access. Scanning discovers targets, collects evidence, evaluates selected rules, applies exceptions, and writes `report/report.json` and `site/`. Inspect [coverage and errors](results.md) even when the command exits zero.
+Validation checks local configuration without GitHub requests; it does not prove remote access. Scanning discovers targets, collects evidence, evaluates selected rules, applies exceptions, and writes `report/report.json` and `site/`. Inspect [coverage and errors](results.md) even when the command exits zero.
 
 Keep generated output out of Git. Add these entries to your central repository's `.gitignore`:
 

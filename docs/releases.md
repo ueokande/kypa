@@ -21,7 +21,7 @@ The main branch name may change; the distinction between a source branch and a c
 The planned GitHub Actions release workflow prepares artifacts before creating the public tag:
 
 1. Select and record an exact source commit and release version. Use the repository's pinned toolchain and frozen pnpm lockfile once implementation begins.
-2. Run formatting, lint, separate type checking, fixture-based tests, and relevant builds against that source. Build CLI and plugin packages with Rslib and the dashboard with Rsbuild.
+2. Run formatting, lint, separate type checking, fixture-based tests, and relevant builds against that source. Build CLI and shared packages with Rslib and the dashboard with Rsbuild.
 3. In an isolated temporary release branch or checkout, retain the selected source and add the compiled Action bundle and required assets. Verify that the root `action.yml` references an existing compiled entry point and that the bundled Action works without consumer dependency installation. Test the packaged CLI as well as the source-level checks.
 4. Create a release commit containing those generated files. Record the original source SHA and version in release metadata so the generated commit can be traced back to reviewed source.
 5. Create the exact tag, such as `v1.0.0`, on that release commit and push it. Publish the npm CLI built from the same source and version, and record the release-commit SHA and distribution status in the release notes.
@@ -34,6 +34,6 @@ Git tags and npm publication are separate operations and cannot be assumed atomi
 
 For production Actions, resolve a reviewed release tag to its full release-commit SHA and pin that SHA. Review both source changes and generated artifacts, and use recorded source provenance to understand what was built. A source commit from `master` does not contain the Action bundle and is not a runnable replacement for the release commit.
 
-For local use, install a published exact CLI version as shown in [getting started](getting-started.md). The npm package is already compiled; a supported compatible Node.js runtime is still required. The released Action includes its CLI and runtime dependencies, so built-in checks do not need pnpm or an npm CLI download in the consumer workflow. Custom plugins remain explicitly installed and compiled in the trusted central repository.
+For local use, install a published exact CLI version as shown in [getting started](getting-started.md). The npm package is already compiled; a supported compatible Node.js runtime is still required. The released Action includes its CLI and runtime dependencies, so built-in checks do not need pnpm or an npm CLI download in the consumer workflow.
 
 Exact release tags are intended to remain immutable. The initial documented interface does not promise a moving `v1` alias. All versions in this manual are examples until an actual release is announced. Release automation and distribution artifacts are not implemented by these documentation changes.

@@ -37,7 +37,7 @@ The proposed JSON report uses `schemaVersion: 1` and these top-level fields:
 | `errors` | Safe discovery, collection, and evaluation errors. |
 | `warnings` | Nonfatal notices such as expired exceptions. |
 
-Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The full field-level SDK schema will follow implementation. This table is not a verified executable schema and does not promise undocumented nested field names.
+Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The full field-level report schema will follow implementation. This table is not a verified executable schema and does not promise undocumented nested field names.
 
 Consumers must check supported schema versions, completeness, and evaluation outcomes before interpreting finding counts. Reports must not contain secrets, raw API payloads, or unnecessary source content. Messages and locations may still reveal internal repository names and policy posture; restrict report access.
 

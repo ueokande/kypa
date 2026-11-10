@@ -2,15 +2,12 @@
 
 > Proposed first-release YAML contract. No parser or runtime is available yet.
 
-Use `kypa.yaml` by default or select another file with `--config`. All local paths, including plugin and output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
+Use `kypa.yaml` by default or select another file with `--config`. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
 
 ## Complete example
 
 ```yaml
 version: 1
-
-plugins:
-  - ./plugins/company/dist/index.js
 
 targets:
   organizations:
@@ -61,7 +58,6 @@ This example spans two owners. Confirm that the selected authentication covers b
 | Field | Contract |
 | --- | --- |
 | `version` | Required policy format version, initially `1`. |
-| `plugins` | Optional explicit trusted package specifiers or compiled local ESM paths. No target-provided code loading. |
 | `targets` | At least one organization or explicit repository is required. |
 | `scan` | Optional collection controls; defaults below. |
 | `rules` | Selected registered rule IDs with settings. At least one enabled rule is required. |
@@ -88,7 +84,7 @@ Retries are bounded and honor `Retry-After` and rate-limit responses. Permanent 
 
 ## Rule selection
 
-Only rules listed in `rules` with `enabled` other than `false` run. `enabled` defaults to `true`; severity defaults to the rule's declared default. Allowed severities are `info`, `low`, `medium`, `high`, and `critical`. `parameters` are validated using the rule's runtime schema, including defaults and constraints. Unknown rule IDs, invalid parameters, unknown settings, and configurations with no enabled rules are validation errors. Installing a plugin does not automatically enable its rules.
+Only rules listed in `rules` with `enabled` other than `false` run. `enabled` defaults to `true`; severity defaults to the rule's declared default. Allowed severities are `info`, `low`, `medium`, `high`, and `critical`. `parameters` are validated using the rule's runtime schema, including defaults and constraints. Unknown rule IDs, invalid parameters, unknown settings, and configurations with no enabled rules are validation errors.
 
 ## Exceptions
 
@@ -98,10 +94,8 @@ An exception is valid through the entire specified UTC day and expires at the ne
 
 Retain original findings and all matching exception metadata. Expired exceptions produce warnings and do not suppress findings. Exceptions cannot suppress discovery, collection, or evaluation errors, override central rule selection, or re-include excluded targets. When only some findings are exempt, the evaluation still fails. Target repository settings and suppression comments cannot override this policy.
 
-## Reporters and plugins
+## Reporters
 
 `json` requires `options.path`, the destination JSON file. `pages` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/kypa-monitor/` for that project path. It must match the deployment URL.
 
-Output destinations must not overlap each other or overwrite source, configuration, or plugins. For example, do not put the JSON file inside the Pages destination, point Pages at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.
-
-Register plugins from trusted installed packages or local compiled ESM such as `./plugins/company/dist/index.js`. Compile TypeScript before loading it. Plugin compatibility, IDs, and reporter options are validated locally; duplicate IDs and incompatible SDK versions are rejected. See [plugins](plugins.md).
+Output destinations must not overlap each other or overwrite source or configuration. For example, do not put the JSON file inside the Pages destination, point Pages at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.

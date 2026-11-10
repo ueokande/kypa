@@ -14,7 +14,7 @@ The initial reports are JSON and an access-controlled static GitHub Pages dashbo
 
 ## Toolchain
 
-Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for CLI, SDK, and plugin packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Select supported stable releases and compatible Node.js LTS when implementation starts, and commit the pnpm lockfile then.
+Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for CLI and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Select supported stable releases and compatible Node.js LTS when implementation starts, and commit the pnpm lockfile then.
 
 ## Architecture
 
@@ -22,16 +22,18 @@ Keep these components separate through explicit, versioned interfaces:
 
 | Component | Responsibilities |
 | --- | --- |
-| SDK | Generic resource identity, evidence, evaluations, findings, and plugin contracts. Repository fields must not be mandatory for unrelated resource types. |
+| SDK | Generic resource identity, evidence, evaluations, findings, and internal component contracts. Repository fields must not be mandatory for unrelated resource types. |
 | Provider / collector | Discovery, pagination, API and file collection, normalized evidence, credentials, and API details. |
 | Rule | Declare resource types, required evidence, version, default severity, and runtime parameter schema. Evaluate collected evidence without credentials or network calls. |
-| Core / runner | Validate policy, resolve plugins and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, evaluate rules, and apply exceptions. |
+| Core / runner | Validate policy, resolve built-in components and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, evaluate rules, and apply exceptions. |
 | Reporter | Consume the common scan report. Initially JSON and static Pages; adding formats must not change rules. |
 | CLI / Action | CLI owns orchestration; the GitHub Action wraps the CLI. |
 
 Start with SDK, core, CLI, GitHub provider, GitHub rules, JSON reporter, and Pages reporter/dashboard packages. Avoid circular dependencies and unnecessary packages.
 
-Plugins are explicitly registered from installed npm packages or local compiled ESM. Validate SDK compatibility and runtime inputs. Reject duplicate IDs and incompatible versions. Plugins are trusted process code, not sandboxed. Never load executable plugins from scanned repositories, execute target scripts/workflows, or install target dependencies.
+Keep the source structure pluggable through explicit internal provider, rule, and reporter interfaces and dependency injection. Register built-in components centrally so the runner does not depend on individual implementations. Keep credentials and collection in providers, pure evidence evaluation in rules, and common-report rendering in reporters. Validate runtime policy parameters and reject duplicate component IDs. Preserve generic resource identity and versioned evidence so future providers do not require a repository-only model.
+
+External plugins are deferred. Do not implement a public plugin loader, package/module registration in YAML, executable extension discovery, or a published SDK compatibility promise in the initial release. Do not document plugin installation, configuration, or SDK examples in `docs/`; it is the user manual for supported built-in features. Internal interfaces may evolve until an external extension contract is deliberately introduced. Never execute target scripts/workflows or install target dependencies.
 
 ## Evaluation and reports
 

@@ -12,7 +12,7 @@
 | GitHub returns 404 | Distinguish absent data from unauthorized access. Verify identity and endpoint permissions independently; do not turn every 404 into “no protection” or a passing result. |
 | Rate limits or timeouts | Inspect safe retry guidance, lower concurrency, and honor `Retry-After`. Bounded retries cannot overcome permanent permission failures or unlimited quota demand. |
 | Empty effective targets | Confirm at least one organization/repository and review archive/fork filtering and exclusions, including explicit targets. An empty effective set is fatal. |
-| Unknown rule or plugin | Confirm installation, explicit registration, exact IDs, and enabled rule selection. Build local TypeScript into ESM first. Check SDK apiVersion compatibility and duplicate IDs. |
+| Unknown rule | Check the installed Kypa version, exact built-in rule ID, and enabled rule selection. Only bundled rules are supported in the initial release. |
 | Exception does not apply | Check exact rule ID, repository pattern, unique ID, reason, and quoted calendar date. Expiry uses scan-start time and the end of the named UTC day. Excluded targets stay excluded; errors cannot be exempted. |
 | Zero violations but partial report | Inspect discovery, collection, and evaluation errors and coverage. Zero findings does not prove evaluations succeeded. |
 | Dashboard is stale | Compare displayed run time with Actions results. Fatal scans and failed deployments leave the previous deployment visible; a live site is not evidence of freshness. |

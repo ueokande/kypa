@@ -2,7 +2,7 @@
 
 > Proposed first-release Action contract. `ueokande/Kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
 
-The root Action in `ueokande/Kypa` wraps the CLI. The released Action bundles the compiled CLI, built-in components, and their runtime dependencies; built-in checks do not require pnpm, a consumer-side build, or an npm download of the CLI in the workflow. Install and build custom plugins from the trusted central repository before invoking the Action; never fetch executable plugins from scanned targets.
+The root Action in `ueokande/Kypa` wraps the CLI. The released Action bundles the compiled CLI, built-in components, and their runtime dependencies; built-in checks do not require pnpm, a consumer-side build, or an npm download of the CLI in the workflow.
 
 ## Relationship to the CLI and release tags
 
@@ -66,7 +66,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      # Install and build trusted central plugins here if configured.
       - name: Scan policies
         id: kypa
         uses: ueokande/Kypa@v1.0.0
@@ -100,6 +99,6 @@ For a project site at `/kypa-monitor/`, set `reporters` Pages `basePath` to `/ky
 
 ## Publication behavior
 
-`fail-on: never` allows violations and partial reports to be generated, uploaded, and deployed, keeping visible information current. A partial report must clearly state missing coverage. Fatal configuration, authentication, plugin, or reporter errors fail the scan job and prevent deployment through `needs: scan`. Do not add blanket `continue-on-error` or unconditional upload/deploy steps that mask fatal failures.
+`fail-on: never` allows violations and partial reports to be generated, uploaded, and deployed, keeping visible information current. A partial report must clearly state missing coverage. Fatal configuration, authentication, or reporter errors fail the scan job and prevent deployment through `needs: scan`. Do not add blanket `continue-on-error` or unconditional upload/deploy steps that mask fatal failures.
 
 A fatal scan or failed deployment leaves the previous Pages result in place. Its age remains significant: check the displayed scan timestamp and workflow result, not merely whether the site loads. Concurrency serializes runs without canceling an active scan. The initial release stores only the latest published scan and provides no history, diff, or trend view.
