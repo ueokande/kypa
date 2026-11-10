@@ -4,6 +4,8 @@
 
 | Symptom | Checks and next action |
 | --- | --- |
+| Action entry point is missing when using a branch or SHA | Use an actual published release tag or its release-commit SHA. The main development branch contains TypeScript without generated JS; a source SHA or GitHub Release asset is not a substitute for a compiled Action commit. |
+| CLI and Action versions differ | Match npm version `1.0.0` with Action tag `v1.0.0` once released, and check the recorded source revision. The Action uses its bundled CLI rather than a locally installed npm CLI. |
 | Authentication fails | Check PAT expiry, organization approval, allowed token policies, classic-token SSO authorization, and the central `KYCA_PAT` secret name. Confirm secure local `KYCA_GITHUB_TOKEN` injection without printing its value. Rotate through secure settings. |
 | Some repositories are missing | Check the token's resource owner, selected repositories, account access, organization membership, fork/archive filters, exclusions, and discovery coverage. Compare against an independent inventory; inaccessible repositories may be invisible. |
 | Files work but settings fail | Contents read does not imply Administration read or sufficient account privileges for protection endpoints. Check the selected rule's requirements. |

@@ -17,6 +17,14 @@ kypa scan --config kypa.yaml --fail-on never
 | `--help` | Command help | Show usage. |
 | `--version` | CLI | Show installed tool version. |
 
+## Distribution and the GitHub Action
+
+The planned npm package contains compiled CLI JavaScript and the files required to execute it; installing a released CLI does not require compiling Kypa's TypeScript source. Select a supported Node.js LTS compatible with that release and pin the npm version in your manifest and lockfile.
+
+The CLI and root GitHub Action live in the same repository. The Action bundles the same CLI implementation and adds workflow inputs, outputs, and a job summary. It does not install the CLI from npm at scan time. Given the same release, policy, evidence, and plugins, both entry points use the same rule evaluation and exit policies.
+
+For example, the future Action tag `v1.0.0` corresponds to npm `@kypa/cli@1.0.0`, built from the same recorded source revision. Neither exists today. The development branch contains TypeScript; the Action release commit additionally contains compiled JavaScript. See [Releases and distribution](releases.md) for selecting the correct ref and verifying provenance.
+
 ## Commands
 
 `validate` loads explicitly configured trusted plugins and checks policy format, rule IDs, runtime parameters, exceptions, and reporter configuration locally. It performs no GitHub calls and cannot establish remote access. Plugin loading executes trusted code, so review plugins even for validation.

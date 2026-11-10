@@ -1,8 +1,16 @@
 # GitHub Action and private Pages
 
-> Proposed first-release Action contract. `ueokande/Kypa@v1` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
+> Proposed first-release Action contract. `ueokande/Kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
 
-The root Action in `ueokande/Kypa` wraps the CLI. Built-in checks bundle the CLI and do not require pnpm in the workflow. Install and build custom plugins from the trusted central repository before invoking the Action; never fetch executable plugins from scanned targets.
+The root Action in `ueokande/Kypa` wraps the CLI. The released Action bundles the compiled CLI, built-in components, and their runtime dependencies; built-in checks do not require pnpm, a consumer-side build, or an npm download of the CLI in the workflow. Install and build custom plugins from the trusted central repository before invoking the Action; never fetch executable plugins from scanned targets.
+
+## Relationship to the CLI and release tags
+
+The CLI and Action are maintained in the same `ueokande/Kypa` repository and share the same scanning implementation. The CLI owns orchestration; the Action is a thin adapter that maps inputs to CLI configuration, supplies the collection token through the process environment, reflects failure semantics, and writes Action outputs and the aggregate job summary. Rules and collection logic are not duplicated in the Action. The Action may call the shared CLI execution entry point directly; a subprocess is not required.
+
+The main development branch (currently `master`) contains TypeScript source and does not track generated JavaScript. A release tag such as the future `v1.0.0` points to a separate release commit containing both that source and compiled Action JavaScript. The root `action.yml` must reference an entry point present in that tagged commit. A GitHub Release asset alone is insufficient for a JavaScript Action invoked with `uses`.
+
+Use a published release tag or, preferably, its reviewed full release-commit SHA. `uses: ueokande/Kypa@master` is not a supported execution path because the development branch lacks the compiled entry point. A source commit SHA is also not interchangeable with the corresponding release-commit SHA. Exact version tags are immutable; a moving `v1` alias is not part of the initial documented contract. See [Releases and distribution](releases.md) for build provenance and npm version correspondence.
 
 ## Inputs and outputs
 
@@ -61,7 +69,7 @@ jobs:
       # Install and build trusted central plugins here if configured.
       - name: Scan policies
         id: kypa
-        uses: ueokande/Kypa@v1
+        uses: ueokande/Kypa@v1.0.0
         with:
           token: ${{ secrets.KYCA_PAT }}
           config: kypa.yaml

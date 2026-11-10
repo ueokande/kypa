@@ -14,10 +14,13 @@ TypeScript defines checks; YAML selects targets, rules, parameters, severity, an
 | [Authentication](authentication.md) | Choose a PAT and understand access requirements. |
 | [Configuration](configuration.md) | Define targets, rules, exceptions, and output. |
 | [GitHub Action](github-action.md) | Schedule scans and publish private results. |
+| [Releases and distribution](releases.md) | Choose CLI versions and Action refs from the same repository. |
 | [CLI](cli.md) | Validate, inspect rules, scan, and interpret exit codes. |
 | [Rules](rules.md) | Understand built-in checks and their limits. |
 | [Results](results.md) | Interpret evaluations, coverage, and freshness. |
 | [Plugins](plugins.md) | Extend collection, checks, and reporting with trusted code. |
 | [Troubleshooting](troubleshooting.md) | Diagnose access, configuration, and publication problems. |
+
+The CLI and GitHub Action share one repository and one scanning implementation. The main development branch retains TypeScript source; versioned Action release commits additionally contain compiled JavaScript. npm distributes the compiled CLI from the same source revision. No release exists yet.
 
 The first release excludes scan history, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server. Internal repository visibility does not automatically make Pages private. No OSS license has been selected. Development constraints belong in [AGENTS.md](../AGENTS.md).

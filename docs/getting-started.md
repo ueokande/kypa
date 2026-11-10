@@ -17,7 +17,7 @@ pnpm init
 pnpm add -D @kypa/cli@<released-version>
 ```
 
-Run `pnpm init` only if no package manifest exists. Commit the resulting package manifest and `pnpm-lock.yaml` for repeatable installation. The placeholder is not an available package version.
+Run `pnpm init` only if no package manifest exists. Commit the resulting package manifest and `pnpm-lock.yaml` for repeatable installation. The placeholder is not an available package version. The released npm package will contain compiled JavaScript; consumers do not build Kypa from TypeScript. For example, a future `@kypa/cli@1.0.0` will correspond to the Action release tag `v1.0.0` from the same source revision. See [Releases and distribution](releases.md).
 
 Create `kypa.yaml`:
 
@@ -71,3 +71,5 @@ Open the local server in your own browser. This example uses `basePath: /`; a pr
 ## Automate
 
 Use the complete [GitHub Actions workflow](github-action.md) for daily and manual scans. Store the PAT as the central repository's `KYCA_PAT` Actions secret. Configure Pages with GitHub Actions as its build source and enforce restricted visibility before the first deployment. The PAT is for collection; deployment uses GITHUB_TOKEN/OIDC separately.
+
+Use the Action release tag or its reviewed full release-commit SHA, rather than `master` or the source commit SHA. The tagged release commit includes compiled Action JavaScript; the development branch does not. Built-in Action use needs no pnpm installation or Kypa compilation in your workflow.
