@@ -11,12 +11,11 @@ An evaluation records whether a rule could evaluate a resource and its outcome. 
 | Evaluation status | Meaning |
 | --- | --- |
 | `pass` | Evaluation completed with no violations. |
-| `fail` | At least one non-exempt finding remains. |
+| `fail` | Evaluation completed with at least one finding. |
 | `not-applicable` | The rule does not apply to available resource/evidence conditions. |
-| `exempt` | Findings exist, but all are covered by active central exceptions. |
 | `error` | Required collection or evaluation could not complete reliably. |
 
-Mixed exempt and non-exempt findings produce `fail`. Keep original findings and all matching exception metadata; do not delete evidence of violations. Errors cannot be exempted or converted into passes.
+Keep all findings; do not delete evidence of violations. Errors cannot be converted into passes.
 
 A `complete` report means the intended known scope was processed without scan errors; it does not mean compliant. A `partial` report has discovery, collection, or evaluation errors and must describe missing coverage even when violation count is zero. Inaccessible repositories may never appear in organization discovery, so completeness cannot prove access to the organization's entire inventory. Explicit targets and independent inventory reconciliation help reveal gaps.
 
@@ -32,10 +31,10 @@ The proposed JSON report uses `schemaVersion: 1` and these top-level fields:
 | `run` | Run identity, timestamps, tool and policy versions, and complete/partial status. |
 | `scope` | Requested/discovered/filtered scope and coverage information. |
 | `resources` | Generic identities and provider details, including resolved commits for repositories. |
-| `evaluations` | Resource/rule outcomes, rule versions, and exception relationships. |
-| `findings` | Stable finding identities, safe messages, severity, locations, and exception metadata. |
+| `evaluations` | Resource/rule outcomes and rule versions. |
+| `findings` | Stable finding identities, safe messages, severity, and locations. |
 | `errors` | Safe discovery, collection, and evaluation errors. |
-| `warnings` | Nonfatal notices such as expired exceptions. |
+| `warnings` | Nonfatal operational notices. |
 
 Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The full field-level report schema will follow implementation. This table is not a verified executable schema and does not promise undocumented nested field names.
 

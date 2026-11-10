@@ -33,14 +33,6 @@ rules:
     parameters:
       minimum: 2
 
-exceptions:
-  - id: legacy-build-migration
-    rule: actions/full-sha
-    repositories:
-      - example-org/legacy-build
-    reason: Temporary exception until migration is complete
-    expires: '2027-03-31'
-
 reporters:
   - name: json
     options:
@@ -51,7 +43,7 @@ reporters:
       basePath: /kypa-monitor/
 ```
 
-This example spans two owners. Confirm that the selected authentication covers both; a fine-grained PAT does not automatically do so. It also intentionally excludes `legacy-*`: the displayed exception does not bring `legacy-build` back into scope. Remove or narrow that exclusion if you intend to scan that repository and exempt its findings.
+This example spans two owners. Confirm that the selected authentication covers both; a fine-grained PAT does not automatically do so. Repositories matching `example-org/legacy-*` are excluded from the scan.
 
 ## Top-level fields
 
@@ -61,14 +53,13 @@ This example spans two owners. Confirm that the selected authentication covers b
 | `targets` | At least one organization or explicit repository is required. |
 | `scan` | Optional collection controls; defaults below. |
 | `rules` | Selected registered rule IDs with settings. At least one enabled rule is required. |
-| `exceptions` | Optional centrally approved, expiring finding exceptions. |
 | `reporters` | Required nonempty list of registered reporters and validated options. |
 
 ## Targets
 
-`organizations` lists organization names for paginated enumeration. `repositories` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions and exceptions. An empty effective target set is fatal.
+`organizations` lists organization names for paginated enumeration. `repositories` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions. An empty effective target set is fatal.
 
-Repository matching is case-insensitive. Initial exclusion and exception patterns support only `*`, which matches within one owner or repository name component and never crosses `/`. For example, `example-org/service-*` matches `example-org/service-api`; it does not match a nested path. Do not rely on `**`, `?`, character classes, or regular expressions.
+Repository matching is case-insensitive. Initial exclusion patterns support only `*`, which matches within one owner or repository name component and never crosses `/`. For example, `example-org/service-*` matches `example-org/service-api`; it does not match a nested path. Do not rely on `**`, `?`, character classes, or regular expressions.
 
 Discovery cannot list repositories the token cannot see. Compare discovered scope with an independently maintained inventory when completeness matters. Explicit inaccessible targets must be reported as errors rather than silently treated as compliant.
 
@@ -85,14 +76,6 @@ Retries are bounded and honor `Retry-After` and rate-limit responses. Permanent 
 ## Rule selection
 
 Only rules listed in `rules` with `enabled` other than `false` run. `enabled` defaults to `true`; severity defaults to the rule's declared default. Allowed severities are `info`, `low`, `medium`, `high`, and `critical`. `parameters` are validated using the rule's runtime schema, including defaults and constraints. Unknown rule IDs, invalid parameters, unknown settings, and configurations with no enabled rules are validation errors.
-
-## Exceptions
-
-Each exception requires a unique `id`, an exact registered `rule` ID, a nonempty `repositories` pattern list, a nonblank `reason`, and a valid quoted UTC calendar date in `expires` (`YYYY-MM-DD`). Wildcards apply to repository patterns, not rule IDs.
-
-An exception is valid through the entire specified UTC day and expires at the next day's 00:00 UTC. For `expires: '2027-03-31'`, expiry is `2027-04-01T00:00:00Z`. Evaluate all exceptions against the scan-start timestamp so a long scan does not change eligibility halfway through.
-
-Retain original findings and all matching exception metadata. Expired exceptions produce warnings and do not suppress findings. Exceptions cannot suppress discovery, collection, or evaluation errors, override central rule selection, or re-include excluded targets. When only some findings are exempt, the evaluation still fails. Target repository settings and suppression comments cannot override this policy.
 
 ## Reporters
 

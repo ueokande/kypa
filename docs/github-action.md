@@ -6,7 +6,7 @@ The initial supported entry point is the root GitHub Action in `ueokande/kypa`. 
 
 ## Execution and release tags
 
-The Action reads workflow inputs and calls the common scan runner directly. The runner validates policy, collects evidence, evaluates rules, applies exceptions, and generates reports. The Action translates the result into workflow outputs, the aggregate job summary, and step success or failure. No CLI executable is required. The Action and runner are maintained in the same repository.
+The Action reads workflow inputs and calls the common scan runner directly. The runner validates policy, collects evidence, evaluates rules, and generates reports. The Action translates the result into workflow outputs, the aggregate job summary, and step success or failure. No CLI executable is required. The Action and runner are maintained in the same repository.
 
 The main development branch (currently `master`) contains TypeScript source and does not track generated JavaScript. A release tag such as the future `v1.0.0` points to a separate release commit containing both that source and compiled Action JavaScript. The root `action.yml` must reference an entry point present in that tagged commit. A GitHub Release asset alone is insufficient for a JavaScript Action invoked with `uses`.
 
@@ -26,7 +26,7 @@ After successful report generation, proposed outputs are:
 | --- | --- |
 | `run-id` | Identity of this scan. |
 | `status` | `complete` or `partial`, independent of compliance. |
-| `violation-count` | Number of non-exempt findings. |
+| `violation-count` | Number of findings. |
 | `error-count` | Discovery, collection, and evaluation errors. |
 
 The Action also writes an aggregate job summary. Do not assume outputs exist after a fatal failure.
@@ -110,9 +110,9 @@ The `fail-on` input controls failure after report generation:
 | Value | Behavior |
 | --- | --- |
 | `never` | Succeed after report generation, including violations and partial coverage. |
-| `violation` | Fail for any non-exempt finding or discovery, collection, or evaluation error. |
+| `violation` | Fail for any finding or discovery, collection, or evaluation error. |
 | `error` | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step. |
 
 The runner returns structured outcomes rather than CLI exit codes. The Action marks the step as failed when a generated report triggers the selected failure policy or a fatal configuration, authentication, or output error occurs. Fatal failures always fail the Action regardless of `fail-on`.
 
-Globally unusable authentication is fatal; isolated target access failures can yield a partial report. A reporter failure is fatal even if another reporter already wrote files. Generated files from a fatal run must not be deployed. Configuration validation checks rule IDs, parameters, exceptions, and reporter options before collection; it does not prove remote access. Logs go to stderr and structured results go through the configured reporters.
+Globally unusable authentication is fatal; isolated target access failures can yield a partial report. A reporter failure is fatal even if another reporter already wrote files. Generated files from a fatal run must not be deployed. Configuration validation checks rule IDs, parameters, and reporter options before collection; it does not prove remote access. Logs go to stderr and structured results go through the configured reporters.

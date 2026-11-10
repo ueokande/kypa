@@ -24,7 +24,7 @@ Tags such as `@v1` and branch names such as `@main` fail this textual policy. Lo
 
 The rule does not recursively fetch remote actions or inspect their transitive dependencies. A valid SHA string guarantees neither existence nor safety, provenance, review, or immutability of external artifacts. Parse failures and unsupported reference forms must be reported as errors rather than silently passing. Findings identify path and line and link to the scanned commit.
 
-Central policy ignores target suppression comments. Workflow lockfiles do not constitute an exception to a textual full-SHA requirement. Define authorized temporary exceptions centrally in [configuration](configuration.md).
+Central policy ignores target suppression comments. Workflow lockfiles do not satisfy a textual full-SHA requirement.
 
 ## `repository/required-reviews`
 

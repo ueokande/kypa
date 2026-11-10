@@ -6,13 +6,13 @@
 
 Kypa checks whether resource configuration follows policies defined by your organization. The first release targets GitHub Enterprise Cloud (`github.com`), including organizations with more than 100 internal repositories. It collects default-branch files and GitHub API settings from a central execution repository. No workflow installation, settings changes, or individual owner action is required in target repositories; existing access and organization approvals are still required.
 
-The initial release supports bundled providers, rules, and reporters. YAML selects targets, built-in rules, parameters, severity, and exceptions. Daily and manual central Actions runs generate JSON and a latest-only, access-controlled static Pages dashboard. A PAT handles collection without a mandatory GitHub App installation.
+The initial release supports bundled providers, rules, and reporters. YAML selects targets, built-in rules, parameters, and severity. Daily and manual central Actions runs generate JSON and a latest-only, access-controlled static Pages dashboard. A PAT handles collection without a mandatory GitHub App installation.
 
 | Guide | Use it to |
 | --- | --- |
 | [Getting started](getting-started.md) | Configure central Actions execution and run your first scan. |
 | [Authentication](authentication.md) | Choose a PAT and understand access requirements. |
-| [Configuration](configuration.md) | Define targets, rules, exceptions, and output. |
+| [Configuration](configuration.md) | Define targets, rules, and output. |
 | [GitHub Action](github-action.md) | Schedule scans and publish private results. |
 | [Releases and distribution](releases.md) | Choose Action release tags and verify their source provenance. |
 | [Rules](rules.md) | Understand built-in checks and their limits. |

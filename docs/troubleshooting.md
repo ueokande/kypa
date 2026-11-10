@@ -12,7 +12,6 @@
 | Rate limits or timeouts | Inspect safe retry guidance, lower concurrency, and honor `Retry-After`. Bounded retries cannot overcome permanent permission failures or unlimited quota demand. |
 | Empty effective targets | Confirm at least one organization/repository and review archive/fork filtering and exclusions, including explicit targets. An empty effective set is fatal. |
 | Unknown rule | Check the installed Kypa version, exact built-in rule ID, and enabled rule selection. Only bundled rules are supported in the initial release. |
-| Exception does not apply | Check exact rule ID, repository pattern, unique ID, reason, and quoted calendar date. Expiry uses scan-start time and the end of the named UTC day. Excluded targets stay excluded; errors cannot be exempted. |
 | Zero violations but partial report | Inspect discovery, collection, and evaluation errors and coverage. Zero findings does not prove evaluations succeeded. |
 | Dashboard is stale | Compare displayed run time with Actions results. Fatal scans and failed deployments leave the previous deployment visible; a live site is not evidence of freshness. |
 | Broken assets or missing artifact | Match Pages `basePath` to the actual URL and the workflow artifact path to the configured directory. Use dedicated nonoverlapping output paths and static-friendly routing. |
@@ -25,4 +24,4 @@ Start with the Action validation errors and selected built-in rule IDs, then exa
 
 Never dump the process environment, authorization headers, PATs, raw API responses, or internal source files into logs or public issues. Redact repository names, source paths, user identities, organization details, and sensitive findings as needed. Share a minimal sanitized policy, tool/rule versions, safe error text, and reproducible fixture rather than credentials or private payloads.
 
-Do not add blanket `continue-on-error`, suppress errors with exceptions, or publish partially written files to get a green deployment. Use `fail-on: never` for publishing generated violation/partial reports while preserving fatal failures. See [Action failure policies](github-action.md), [authentication](authentication.md), and [publication](github-action.md).
+Do not add blanket `continue-on-error` or publish partially written files to get a green deployment. Use `fail-on: never` for publishing generated violation/partial reports while preserving fatal failures. See [Action failure policies](github-action.md), [authentication](authentication.md), and [publication](github-action.md).

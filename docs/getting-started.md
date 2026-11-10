@@ -36,13 +36,13 @@ reporters:
       basePath: /
 ```
 
-Replace `example-org` with your organization. This example uses `basePath: /`; for a project site, use the actual deployment path, such as `/kypa-monitor/`. See [configuration](configuration.md) for target selection, parameters, severity, exceptions, and output paths.
+Replace `example-org` with your organization. This example uses `basePath: /`; for a project site, use the actual deployment path, such as `/kypa-monitor/`. See [configuration](configuration.md) for target selection, parameters, severity, and output paths.
 
 ## Add the workflow and run it
 
 Copy the complete [GitHub Actions workflow](github-action.md) into `.github/workflows/kypa.yaml`. Once a release exists, select its tag or reviewed full release-commit SHA. The tagged commit contains compiled Action JavaScript; the development branch and its source commit SHA are not supported runnable Action references.
 
-Commit the policy and workflow to the central repository's default branch. Trigger `workflow_dispatch` from the Actions UI. The Action validates configuration, discovers targets, collects evidence, evaluates selected rules, applies exceptions, and writes `report/report.json` and `site/` on the runner. Validation does not establish remote access; collection must succeed separately.
+Commit the policy and workflow to the central repository's default branch. Trigger `workflow_dispatch` from the Actions UI. The Action validates configuration, discovers targets, collects evidence, evaluates selected rules, and writes `report/report.json` and `site/` on the runner. Validation does not establish remote access; collection must succeed separately.
 
 The example workflow uploads `site/` and deploys it to Pages. JSON remains a runner output unless you separately retain it using access-controlled storage or an appropriately restricted artifact. Do not expose reports through public artifacts or commit generated output. If generated directories are ever copied into the central checkout, ignore them in Git:
 
