@@ -19,6 +19,6 @@ The initial release supports bundled providers, rules, and reporters. YAML selec
 | [Results](results.md) | Interpret evaluations, coverage, and freshness. |
 | [Troubleshooting](troubleshooting.md) | Diagnose access, configuration, and publication problems. |
 
-The CLI and GitHub Action share one repository and one scanning implementation. The main development branch retains TypeScript source; versioned Action release commits additionally contain compiled JavaScript. The supported initial entry point is GitHub Actions; the CLI is an internal execution layer and is not distributed through npm. No release exists yet.
+The GitHub Action calls a common scan runner directly within the same repository. The main development branch retains TypeScript source; versioned Action release commits additionally contain compiled JavaScript. The supported initial entry point is GitHub Actions; no standalone CLI or npm distribution is planned for the initial release. No release exists yet.
 
 The first release excludes scan history, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server. Internal repository visibility does not automatically make Pages private. No OSS license has been selected. Development constraints belong in [AGENTS.md](../AGENTS.md).

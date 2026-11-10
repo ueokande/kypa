@@ -2,7 +2,7 @@
 
 > Planned first-release authentication contract; Kypa is not available yet.
 
-Kypa reads repositories using a PAT passed to the proposed Action from a central `KYPA_PAT` Actions secret. The Action supplies it to the internal runner through `KYPA_GITHUB_TOKEN`; users do not configure that variable separately in the workflow. There is no token CLI argument and no automatic `.env` loading. Never put literal tokens in commands or policy files. Target repositories require no Kypa installation, but all normal access controls apply.
+Kypa reads repositories using a PAT passed to the proposed Action from a central `KYPA_PAT` Actions secret. The Action passes the token to the collection layer; users do not configure a separate token environment variable. Only collection receives credentials. Kypa does not automatically load `.env` files. Never put literal tokens in commands or policy files. Target repositories require no Kypa installation, but all normal access controls apply.
 
 ## Choose a token
 

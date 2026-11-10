@@ -2,13 +2,11 @@
 
 > Proposed first-release Action contract. `ueokande/kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
 
-The initial supported entry point is GitHub Actions. The CLI is an internal execution layer and is not distributed through npm or documented as a standalone user interface.
+The initial supported entry point is the root GitHub Action in `ueokande/kypa`. The released Action bundles the scan runner, built-in components, and runtime dependencies. Consumers do not need pnpm, a consumer-side build, or an npm installation.
 
-The root Action in `ueokande/kypa` wraps the CLI. The released Action bundles the compiled CLI, built-in components, and their runtime dependencies; built-in checks do not require pnpm, a consumer-side build, or an npm download of the CLI in the workflow.
+## Execution and release tags
 
-## Relationship to the CLI and release tags
-
-The CLI and Action are maintained in the same `ueokande/kypa` repository and share the same scanning implementation. The CLI owns orchestration; the Action is a thin adapter that maps inputs to CLI configuration, supplies the collection token through the process environment, reflects failure semantics, and writes Action outputs and the aggregate job summary. Rules and collection logic are not duplicated in the Action. The Action may call the shared CLI execution entry point directly; a subprocess is not required.
+The Action reads workflow inputs and calls the common scan runner directly. The runner validates policy, collects evidence, evaluates rules, applies exceptions, and generates reports. The Action translates the result into workflow outputs, the aggregate job summary, and step success or failure. No CLI executable is required. The Action and runner are maintained in the same repository.
 
 The main development branch (currently `master`) contains TypeScript source and does not track generated JavaScript. A release tag such as the future `v1.0.0` points to a separate release commit containing both that source and compiled Action JavaScript. The root `action.yml` must reference an entry point present in that tagged commit. A GitHub Release asset alone is insufficient for a JavaScript Action invoked with `uses`.
 
@@ -115,6 +113,6 @@ The `fail-on` input controls failure after report generation:
 | `violation` | Fail for any non-exempt finding or discovery, collection, or evaluation error. |
 | `error` | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step. |
 
-The internal runner distinguishes exit code `0` for success under the selected policy, `1` for a generated report that triggers that policy, and `2` for a fatal usage, configuration, authentication, or output failure. Fatal failures always fail the Action regardless of `fail-on`.
+The runner returns structured outcomes rather than CLI exit codes. The Action marks the step as failed when a generated report triggers the selected failure policy or a fatal configuration, authentication, or output error occurs. Fatal failures always fail the Action regardless of `fail-on`.
 
 Globally unusable authentication is fatal; isolated target access failures can yield a partial report. A reporter failure is fatal even if another reporter already wrote files. Generated files from a fatal run must not be deployed. Configuration validation checks rule IDs, parameters, exceptions, and reporter options before collection; it does not prove remote access. Logs go to stderr and structured results go through the configured reporters.
