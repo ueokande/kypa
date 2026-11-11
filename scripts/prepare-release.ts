@@ -1,22 +1,10 @@
-import * as fsPromises from 'node:fs/promises';
-import * as path from 'node:path';
 import { prepareRelease } from './release.ts';
-import { notesForRelease } from './release-policy.ts';
 
 const version = process.env.RELEASE_VERSION;
-if (!version || !process.env.RUNNER_TEMP)
-  throw new Error('RELEASE_VERSION and RUNNER_TEMP are required.');
-const notes = notesForRelease(
-  await fsPromises.readFile('CHANGELOG.md', 'utf8'),
-  version,
-);
+if (!version) throw new Error('RELEASE_VERSION is required.');
 const result = await prepareRelease(process.cwd(), version, {
   reuseExisting: true,
 });
-await fsPromises.writeFile(
-  path.join(process.env.RUNNER_TEMP, 'kypa-release-notes.md'),
-  `${notes}\n\nSource commit: ${result.source}\nAction commit: ${result.commit}\n`,
-);
 console.log(
   `Prepared ${version}: source ${result.source}, release commit ${result.commit}.`,
 );

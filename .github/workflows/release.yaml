@@ -94,6 +94,7 @@ jobs:
       contents: write
     env:
       RELEASE_VERSION: ${{ needs.build.outputs.version }}
+      SOURCE_TAG: ${{ needs.build.outputs.source_tag }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -107,6 +108,8 @@ jobs:
         with:
           name: action-release-build
           path: dist
+      - name: Copy source GitHub Release notes
+        run: gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/kypa-release-notes.md"
       - name: Prepare generated commit and annotated tag
         run: node scripts/prepare-release.ts
       - name: Push only the exact distribution tag

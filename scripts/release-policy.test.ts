@@ -3,25 +3,11 @@ import * as fsPromises from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import {
-  notesForRelease,
-  sourceRelease,
-  versionForRelease,
-} from './release-policy.js';
+import { sourceRelease, versionForRelease } from './release-policy.js';
 
-test('version and changelog selection are exact', () => {
+test('package and manifest versions must match', () => {
   expect(versionForRelease('0.1.0', '0.1.0')).toBe('v0.1.0');
   expect(() => versionForRelease('0.2.0', '0.1.0')).toThrow();
-  expect(
-    notesForRelease(
-      '# Changelog\n\n## [0.2.0](url)\nNew\n\n## [0.1.0](url)\nOld',
-      'v0.2.0',
-    ),
-  ).toContain('New');
-  expect(
-    notesForRelease('## [0.2.0]\nNew\n## [0.1.0]\nOld', 'v0.2.0'),
-  ).not.toContain('Old');
-  expect(() => notesForRelease('# Empty', 'v0.1.0')).toThrow();
 });
 const directories: string[] = [];
 afterEach(async () => {
