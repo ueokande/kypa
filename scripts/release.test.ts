@@ -96,14 +96,12 @@ test('release tag points to a generated commit while master remains source-only'
     'Tag already exists',
   );
 });
-test('invalid/mismatched versions, dirty source, and missing artifacts block preparation', async () => {
+test('invalid/mismatched versions and dirty source block preparation', async () => {
   const { directory } = await fixture();
   await expect(prepareRelease(directory, 'v1.0.0; bad')).rejects.toThrow(
     'exact stable',
   );
   await expect(prepareRelease(directory, 'v1.0.0')).rejects.toThrow('match');
-  await fsPromises.rm(path.join(directory, 'dist/action/index.js'));
-  await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('missing');
   await fsPromises.writeFile(path.join(directory, 'source.ts'), 'changed');
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('clean');
 });

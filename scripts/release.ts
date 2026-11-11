@@ -74,8 +74,6 @@ export async function prepareRelease(
 
   await walk('dist/action');
   await walk('dist/dashboard');
-  if (!hashes['dist/action/index.js'] || !hashes['dist/dashboard/index.html'])
-    throw new Error('Action or dashboard build is missing.');
   if (existing.status === 0) {
     const previous = JSON.parse(
       git('show', `${version}:dist/provenance.json`),
