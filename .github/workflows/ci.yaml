@@ -9,15 +9,30 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          persist-credentials: false
+      - name: Check workflow lockfile coverage without API access
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64 \
+            --output "$RUNNER_TEMP/gh-actions-lock"
+          echo "39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e  $RUNNER_TEMP/gh-actions-lock" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/gh-actions-lock"
+          "$RUNNER_TEMP/gh-actions-lock" --verify-local
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6.1.0
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: pnpm/action-setup@v5.0.0
+      - uses: actions/setup-node@v6.5.0
         with:
           node-version-file: .node-version
           cache: pnpm

@@ -18,6 +18,14 @@ Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard,
 
 Prefer supported dependency versions that satisfy pnpm's minimum release age. Keep `minimumReleaseAgeStrict` enabled. Do not add package/version-specific `minimumReleaseAgeExclude` entries merely to adopt the latest version; an exception needs a concrete requirement unavailable in mature supported versions.
 
+## Workflow dependencies
+
+Use readable exact version tags in workflow `uses:` entries and commit `.github/workflows/actions.lock`. GitHub Actions resolves dependencies to the commits and repository identities recorded in this native workflow lockfile. Keep every workflow and transitive Action dependency covered. All current dependencies are JavaScript Actions without nested `uses:` dependencies.
+
+Use GitHub's official `gh-actions-lock` extension to maintain the lockfile. Run `gh actions-lock` after changing workflow dependencies, review the resulting refs, commits, and repository identities, and commit the workflow and lockfile together. Use `gh actions-lock --relock` only for deliberate dependency updates. Never automatically accept moved tags. The initial lockfile was assembled without GitHub API access using Git refs, Action metadata, and owner/repository IDs published on github.com; the pnpm setup pin records the commit behind its former annotated-tag object.
+
+`gh actions-lock --verify-local` checks coverage offline; it does not authenticate repository identities or verify remote provenance. CI downloads the pinned v0.4.1 Linux binary from its GitHub Release, verifies its SHA-256, and runs this offline check without accessing api.github.com. Update the URL and checksum together when upgrading the tool. GitHub Actions performs native lockfile validation when starting jobs. Where API access is available, use `gh actions-lock --verify` for an additional read-only provenance check before merging.
+
 ## Node.js imports
 
 Use namespace imports for the following function-oriented built-in modules. This is a project convention, not a built-in Biome rule. Apply it consistently to application source, tests, and development/release scripts.

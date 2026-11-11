@@ -33,7 +33,7 @@ jobs:
       source_tag: ${{ steps.release.outputs.tag_name }}
       source: ${{ steps.release.outputs.sha }}
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      - uses: googleapis/release-please-action@v5.0.0
         id: release
         with:
           target-branch: master
@@ -52,7 +52,7 @@ jobs:
       source_tag: ${{ steps.release.outputs.source_tag }}
       version: ${{ steps.release.outputs.version }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6.1.0
         with:
           ref: master
           fetch-depth: 0
@@ -72,7 +72,7 @@ jobs:
             echo "source_tag=$SOURCE_TAG"
             echo "version=${SOURCE_TAG#source-}"
           } >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6.1.0
         with:
           ref: ${{ steps.release.outputs.source }}
           persist-credentials: false
@@ -83,14 +83,14 @@ jobs:
           package_version=$(jq -er '.version' package.json)
           manifest_version=$(jq -er '.["."]' .release-please-manifest.json)
           [[ "$SOURCE_TAG" == "source-v$package_version" && "$package_version" == "$manifest_version" ]]
-      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: pnpm/action-setup@v5.0.0
+      - uses: actions/setup-node@v6.5.0
         with:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@v6.0.0
         with:
           name: action-release-build
           path: |
@@ -111,11 +111,11 @@ jobs:
       SOURCE_SHA: ${{ needs.build.outputs.source }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6.1.0
         with:
           ref: ${{ needs.build.outputs.source }}
           fetch-depth: 0
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@v7.0.0
         with:
           name: action-release-build
           path: dist
@@ -141,7 +141,7 @@ jobs:
       SOURCE_TAG: ${{ inputs['source-tag'] }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6.1.0
         with:
           ref: master
           fetch-depth: 0
