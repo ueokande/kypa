@@ -1,5 +1,9 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { GitHubClient } from "./client.js";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const settings = {
   token: "private-token",
@@ -8,20 +12,23 @@ const settings = {
   requestTimeoutSeconds: 30,
 };
 
-test("honors Retry-After and never includes credentials in the URL", async () => {
+test("Octokit honors secondary rate-limit Retry-After without putting credentials in the URL", async () => {
+  vi.useFakeTimers();
   const transport = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(
-      new Response("", { status: 429, headers: { "retry-after": "2" } }),
+      Response.json(
+        { message: "You have exceeded a secondary rate limit." },
+        { status: 429, headers: { "retry-after": "2" } },
+      ),
     )
     .mockResolvedValueOnce(Response.json({ ok: true }));
-  const sleep = vi.fn(async () => {});
-  expect(
-    await new GitHubClient({ ...settings, fetch: transport, sleep }).get(
-      "/user",
-    ),
-  ).toEqual({ ok: true });
-  expect(sleep).toHaveBeenCalledWith(2000, undefined);
+  const result = expect(
+    new GitHubClient({ ...settings, fetch: transport }).get("/user"),
+  ).resolves.toEqual({ ok: true });
+  await vi.advanceTimersByTimeAsync(2100);
+  await result;
+  expect(transport).toHaveBeenCalledTimes(2);
   expect(transport.mock.calls[0]?.[0]).toBe("https://api.github.com/user");
 });
 
@@ -42,31 +49,49 @@ test("401 is fatal; 404 is not retried and cannot expose response text", async (
   expect(transport).toHaveBeenCalledTimes(1);
 });
 
-test("bounds retries, cancellation, and excessively long server delays", async () => {
+test("Octokit bounds server retries and declines excessively long rate-limit delays", async () => {
+  vi.useFakeTimers();
   const transport = vi
     .fn<typeof fetch>()
     .mockImplementation(async () => new Response("", { status: 503 }));
-  await expect(
-    new GitHubClient({
-      ...settings,
-      fetch: transport,
-      sleep: async () => {},
-    }).get("/x"),
-  ).rejects.toThrow();
+  const result = expect(
+    new GitHubClient({ ...settings, fetch: transport }).get("/x"),
+  ).rejects.toMatchObject({ status: 503, code: "HTTP" });
+  await vi.advanceTimersByTimeAsync(6000);
+  await result;
   expect(transport).toHaveBeenCalledTimes(3);
-  await expect(
-    new GitHubClient(settings).get("/x", AbortSignal.abort()),
-  ).rejects.toThrow();
-  await expect(
-    new GitHubClient({
-      ...settings,
-      fetch: async () =>
-        new Response("", { status: 429, headers: { "retry-after": "999999" } }),
-    }).get("/x"),
-  ).rejects.toThrow();
+  const limited = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async () =>
+      Response.json(
+        { message: "You have exceeded a secondary rate limit." },
+        { status: 429, headers: { "retry-after": "999999" } },
+      ),
+    );
+  const rejected = expect(
+    new GitHubClient({ ...settings, fetch: limited }).get("/x"),
+  ).rejects.toMatchObject({ code: "RATE_LIMIT" });
+  await vi.advanceTimersByTimeAsync(100);
+  await rejected;
+  expect(limited).toHaveBeenCalledTimes(1);
 });
 
-test("request concurrency stays within the configured limit", async () => {
+test("requests cancelled before submission never reach the transport", async () => {
+  const transport = vi.fn<typeof fetch>();
+  await expect(
+    new GitHubClient({ ...settings, fetch: transport }).get(
+      "/x",
+      AbortSignal.abort(),
+    ),
+  ).rejects.toThrow();
+  expect(transport).not.toHaveBeenCalled();
+});
+
+test("concurrent callers stay within the configured limit without serializing every request", async () => {
+  let release: (() => void) | undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   let active = 0;
   let maximum = 0;
   const client = new GitHubClient({
@@ -74,12 +99,17 @@ test("request concurrency stays within the configured limit", async () => {
     fetch: async () => {
       active++;
       maximum = Math.max(maximum, active);
-      await new Promise((resolve) => setTimeout(resolve, 2));
+      await gate;
       active--;
       return Response.json({});
     },
   });
-  await Promise.all(Array.from({ length: 10 }, () => client.get("/x")));
+  const pending = Promise.all(
+    Array.from({ length: 10 }, () => client.get("/x")),
+  );
+  await vi.waitFor(() => expect(active).toBe(2));
+  release?.();
+  await pending;
   expect(maximum).toBe(2);
 });
 
@@ -156,47 +186,51 @@ test("malformed JSON responses cannot become successful evidence or expose paylo
   });
 });
 
-test("Octokit network failures obey the configured retry budget and are sanitized", async () => {
+test("Octokit network failures obey its retry budget and are sanitized", async () => {
+  vi.useFakeTimers();
   const transport = vi
     .fn<typeof fetch>()
     .mockRejectedValue(new Error("private-token network payload"));
-  const client = new GitHubClient({
-    ...settings,
-    fetch: transport,
-    sleep: async () => {},
-  });
-  await expect(client.get("/user")).rejects.toMatchObject({
+  const result = expect(
+    new GitHubClient({ ...settings, fetch: transport }).get("/user"),
+  ).rejects.toMatchObject({
     status: 0,
     code: "NETWORK",
     message: "GitHub request failed (NETWORK).",
   });
+  await vi.advanceTimersByTimeAsync(6000);
+  await result;
   expect(transport).toHaveBeenCalledTimes(3);
 });
 
-test("primary rate limits honor the reset time without retrying permission errors", async () => {
+test("Octokit handles primary rate-limit resets without retrying permission errors", async () => {
+  vi.useFakeTimers();
   const transport = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(
       new Response("", {
         status: 403,
-        headers: { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "12" },
+        headers: {
+          "x-ratelimit-remaining": "0",
+          "x-ratelimit-reset": String(Math.floor(Date.now() / 1000) + 2),
+        },
       }),
     )
     .mockResolvedValueOnce(Response.json({}));
-  const sleep = vi.fn(async () => {});
-  await new GitHubClient({
-    ...settings,
-    fetch: transport,
-    sleep,
-    now: () => 10_000,
-  }).get("/user");
-  expect(sleep).toHaveBeenCalledWith(2000, undefined);
+  const result = expect(
+    new GitHubClient({ ...settings, fetch: transport }).get("/user"),
+  ).resolves.toEqual({});
+  await vi.advanceTimersByTimeAsync(4000);
+  await result;
+  expect(transport).toHaveBeenCalledTimes(2);
   const forbidden = vi
     .fn<typeof fetch>()
     .mockResolvedValue(new Response("private-token", { status: 403 }));
-  await expect(
+  const denied = expect(
     new GitHubClient({ ...settings, fetch: forbidden }).get("/user"),
   ).rejects.toMatchObject({ code: "HTTP" });
+  await vi.advanceTimersByTimeAsync(100);
+  await denied;
   expect(forbidden).toHaveBeenCalledTimes(1);
 });
 
@@ -235,7 +269,7 @@ test("pagination never sends credentials to an external next-page URL", async ()
   expect(transport).toHaveBeenCalledTimes(1);
 });
 
-test("request timeouts remain bounded and consume only the configured retry budget", async () => {
+test("queue timeouts abort the transport without retrying cancelled work", async () => {
   const transport = vi
     .fn<typeof fetch>()
     .mockImplementation(async (_input, init) => {
@@ -250,11 +284,116 @@ test("request timeouts remain bounded and consume only the configured retry budg
     });
   const client = new GitHubClient({
     ...settings,
-    requestTimeoutSeconds: 0.01,
+    requestTimeoutSeconds: 0.1,
     retries: 1,
     fetch: transport,
-    sleep: async () => {},
   });
-  await expect(client.get("/user")).rejects.toMatchObject({ code: "NETWORK" });
+  await expect(client.get("/user")).rejects.toMatchObject({ code: "TIMEOUT" });
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+test("request failures release the queue for other callers", async () => {
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(new Response("private-token", { status: 404 }))
+    .mockResolvedValueOnce(Response.json({ ok: true }));
+  const client = new GitHubClient({
+    ...settings,
+    concurrency: 1,
+    fetch: transport,
+  });
+  const results = await Promise.allSettled([
+    client.get("/missing"),
+    client.get("/user"),
+  ]);
+  expect(results[0]).toMatchObject({
+    status: "rejected",
+    reason: { code: "HTTP" },
+  });
+  expect(results[1]).toEqual({ status: "fulfilled", value: { ok: true } });
+});
+
+test("cancelling in-flight work aborts its transport and leaves other callers usable", async () => {
+  const controller = new AbortController();
+  let cancelled = false;
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async (input, init) => {
+      if (String(input).endsWith("/blocked")) {
+        await new Promise<void>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => {
+              cancelled = true;
+              reject(init.signal?.reason);
+            },
+            { once: true },
+          );
+        });
+      }
+      return Response.json({ ok: true });
+    });
+  const client = new GitHubClient({
+    ...settings,
+    concurrency: 1,
+    fetch: transport,
+  });
+  const first = expect(
+    client.get("/blocked", controller.signal),
+  ).rejects.toThrow();
+  await vi.waitFor(() => expect(transport).toHaveBeenCalledTimes(1));
+  const second = client.get("/user");
+  controller.abort();
+  await first;
+  await expect(second).resolves.toEqual({ ok: true });
+  expect(cancelled).toBe(true);
   expect(transport).toHaveBeenCalledTimes(2);
+});
+
+test("cancelled rate-limit retries never send another request", async () => {
+  vi.useFakeTimers();
+  const controller = new AbortController();
+  const transport = vi.fn<typeof fetch>().mockImplementation(async () =>
+    Response.json(
+      {
+        message: "You have exceeded a secondary rate limit.",
+      },
+      { status: 429, headers: { "retry-after": "2" } },
+    ),
+  );
+  const first = expect(
+    new GitHubClient({ ...settings, fetch: transport }).get(
+      "/user",
+      controller.signal,
+    ),
+  ).rejects.toThrow();
+  await vi.advanceTimersByTimeAsync(100);
+  expect(transport).toHaveBeenCalledTimes(1);
+  controller.abort();
+  await first;
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+test("operation timeouts also bound Octokit's rate-limit waits", async () => {
+  vi.useFakeTimers();
+  const transport = vi.fn<typeof fetch>().mockImplementation(async () =>
+    Response.json(
+      {
+        message: "You have exceeded a secondary rate limit.",
+      },
+      { status: 429, headers: { "retry-after": "2" } },
+    ),
+  );
+  const result = expect(
+    new GitHubClient({
+      ...settings,
+      requestTimeoutSeconds: 0.1,
+      fetch: transport,
+    }).get("/user"),
+  ).rejects.toMatchObject({ code: "TIMEOUT" });
+  await vi.advanceTimersByTimeAsync(200);
+  await result;
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(transport).toHaveBeenCalledTimes(1);
 });

@@ -65,13 +65,13 @@ Discovery cannot list repositories the token cannot see. Compare discovered scop
 
 ## Collection controls
 
-| Setting                      | Default | Meaning                                                       |
-| ---------------------------- | ------- | ------------------------------------------------------------- |
-| `scan.concurrency`           | `4`     | Positive integer cap on concurrent requests.                  |
-| `scan.retries`               | `3`     | Nonnegative integer maximum retries after an initial request. |
-| `scan.requestTimeoutSeconds` | `30`    | Positive request timeout in seconds.                          |
+| Setting                      | Default | Meaning                                                                         |
+| ---------------------------- | ------- | ------------------------------------------------------------------------------- |
+| `scan.concurrency`           | `4`     | Positive integer cap on concurrent requests.                                    |
+| `scan.retries`               | `3`     | Nonnegative retry limit for Octokit's transient-error and rate-limit handlers.  |
+| `scan.requestTimeoutSeconds` | `30`    | Positive operation timeout in seconds, starting when it leaves the local queue. |
 
-Retries are bounded and honor `Retry-After` and rate-limit responses. Permanent authorization/configuration failures must not cause endless retries. Lower concurrency when rate limits occur; higher concurrency does not increase API quotas.
+Octokit handles transient-error retries and primary/secondary rate limits. Each handler uses `scan.retries` as its retry limit. The operation timeout includes Octokit's throttling and retry delays, but excludes time waiting in the local concurrency queue. Queued and running requests support cancellation. Octokit's own throttling may reduce concurrency below the configured cap. Permanent authorization/configuration failures are not retried. Lower concurrency when rate limits occur; higher concurrency does not increase API quotas.
 
 ## Rule selection
 
@@ -85,6 +85,6 @@ Output destinations must not overlap each other or overwrite source or configura
 
 Output destinations must be fresh, dedicated paths beneath the policy directory; existing destinations, including prior generated reports, are rejected rather than overwritten. The standard workflow checks out a fresh central repository on each run. Clear only known generated outputs before a development rerun. Symlinks must not redirect output outside the policy directory. HTML base paths support slash-delimited letters, digits, hyphens, and underscores.
 
-Retries honor server delays up to five minutes; longer delays produce an explicit coverage error rather than holding a workflow indefinitely. A truncated Git tree, unsupported file mode, or Action/workflow file larger than 1 MiB produces a collection error. These limits must not be interpreted as a passing evaluation.
+Rate-limit retries decline delays longer than five minutes; an operation can time out sooner according to `scan.requestTimeoutSeconds`. A truncated Git tree, unsupported file mode, or Action/workflow file larger than 1 MiB produces a collection error. These limits must not be interpreted as a passing evaluation.
 
 The `html` reporter produces a portable static site; it does not invoke any hosting API. Use the same directory with GitHub Pages, an internal HTTP server, or another access-controlled static host. Deployment and access restrictions are the hosting workflow's responsibility.
