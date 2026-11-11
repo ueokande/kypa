@@ -48,6 +48,7 @@ const provider: Provider = {
   }),
 };
 const reporter: Reporter = { id: 'test', write: vi.fn(async () => {}) };
+
 const run = (extra: Partial<Parameters<typeof runScan>[1]> = {}) =>
   runScan(policy, {
     provider,
@@ -59,6 +60,7 @@ const run = (extra: Partial<Parameters<typeof runScan>[1]> = {}) =>
     runId: () => 'fixture',
     ...extra,
   });
+
 test('generic resource evaluation generates findings, stable identity, and reports despite violations', async () => {
   const report = await run();
   const again = await run();

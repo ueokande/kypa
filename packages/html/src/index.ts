@@ -1,9 +1,11 @@
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
+
 export function createHtmlReporter(assetsDirectory: string): Reporter {
   return {
     id: 'html',
+
     async write(report, options, context) {
       if (
         !options.directory ||

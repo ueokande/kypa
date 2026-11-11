@@ -6,6 +6,7 @@ export interface ActionReference {
   line: number;
   url: string;
 }
+
 export function collectReferences(
   text: string,
   path: string,
@@ -20,6 +21,7 @@ export function collectReferences(
     throw new Error('Expected a YAML mapping.');
   const object = data as Record<string, unknown>;
   const result: ActionReference[] = [];
+
   const record = (value: unknown, keys: (string | number)[]) => {
     if (typeof value !== 'string') throw new Error('Unsupported uses value.');
     if (value.startsWith('./') || value.startsWith('docker://')) return;
@@ -48,6 +50,7 @@ export function collectReferences(
       url: `https://github.com/${repository}/blob/${commit}/${path.split('/').map(encodeURIComponent).join('/')}#L${line}`,
     });
   };
+
   const steps = (value: unknown, keys: (string | number)[]) => {
     if (value === undefined) return;
     if (!Array.isArray(value)) throw new Error('Invalid steps.');
@@ -57,6 +60,7 @@ export function collectReferences(
       if ('uses' in step) record(step.uses, [...keys, index, 'uses']);
     });
   };
+
   if (path.startsWith('.github/workflows/')) {
     const jobs = object.jobs;
     if (!jobs || typeof jobs !== 'object' || Array.isArray(jobs))

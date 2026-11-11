@@ -38,16 +38,21 @@ const treeSchema = z.object({
     }),
   ),
 });
+
 export function createGitHubProvider(options: ClientOptions): Provider {
   if (!options.token.trim())
     throw new FatalError('AUTHENTICATION', 'A collection token is required.');
   const api = new GitHubClient(options);
+
   const now = () => new Date((options.now ?? Date.now)()).toISOString();
+
   return {
     id: 'github',
+
     async discover(targets: TargetConfig, signal): Promise<Discovery> {
       const result: Discovery = { resources: [], errors: [], excluded: [] };
       const seen = new Set<string>();
+
       const add = (data: unknown) => {
         const repo = repoSchema.parse(data);
         const name = repo.full_name.toLowerCase();
@@ -75,6 +80,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           },
         });
       };
+
       for (const org of [
         ...new Set(targets.organizations.map((value) => value.toLowerCase())),
       ]) {
@@ -128,6 +134,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       result.resources.sort((a, b) => a.name.localeCompare(b.name));
       return result;
     },
+
     async collect(
       resource: Resource,
       ids,
@@ -137,6 +144,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       const base = `/repos/${resource.name.split('/').map(encodeURIComponent).join('/')}`;
       const branch = resource.metadata.defaultBranch;
       let commit: z.infer<typeof commitSchema> | undefined;
+
       const unavailable = (id: string, error: unknown) => {
         if (error instanceof FatalError || signal?.aborted) throw error;
         result[id] = {
@@ -149,6 +157,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           message: 'Required GitHub evidence could not be collected or parsed.',
         };
       };
+
       if (!branch) {
         for (const id of ids)
           result[id] = { state: 'not-applicable', observedAt: now() };

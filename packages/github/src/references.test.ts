@@ -7,6 +7,7 @@ const fixture = (name: string) =>
     new URL(`../../rules/fixtures/${name}.yml`, import.meta.url),
     'utf8',
   );
+
 test('collects step and reusable workflow references with commit-pinned locations', () => {
   const refs = collectReferences(
     fixture('workflow'),

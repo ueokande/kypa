@@ -68,10 +68,12 @@ test('rejects overlapping, existing, escaping, and symlink output destinations',
   );
   directories.push(directory);
   const file = path.join(directory, 'policy.yaml');
+
   const check = async (text: string) => {
     await fsPromises.writeFile(file, text);
     return loadPolicy(file, [rule]);
   };
+
   await expect(check(source)).resolves.toMatchObject({ directory });
   await expect(
     check(source.replace('report/report.json', '../outside.json')),

@@ -10,11 +10,13 @@ const resource: Resource = {
   url: 'https://github.com/org/repo',
   metadata: {},
 };
+
 const available = (data: unknown): Evidence => ({
   state: 'available',
   observedAt: '2026-01-01T00:00:00Z',
   data,
 });
+
 const references = (refs: string[]) => ({
   'github/action-references@1': available({
     references: refs.map((reference) => ({
@@ -25,6 +27,7 @@ const references = (refs: string[]) => ({
     })),
   }),
 });
+
 test('full-SHA violations are independent of target suppression comments', () => {
   const result = fullSha.evaluate(
     resource,

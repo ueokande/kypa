@@ -38,6 +38,7 @@ test('source tags resolve to master commits, independently of distribution tags'
     path.join(os.tmpdir(), 'kypa-source-'),
   );
   directories.push(directory);
+
   const git = (...args: string[]) =>
     childProcess
       .execFileSync('git', ['-C', directory, ...args], {
@@ -45,6 +46,7 @@ test('source tags resolve to master commits, independently of distribution tags'
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       .trim();
+
   git('init', '--initial-branch=master');
   git('config', 'commit.gpgsign', 'false');
   const identity = [

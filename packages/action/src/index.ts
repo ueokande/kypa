@@ -10,15 +10,20 @@ import { FatalError, type Policy, type Report, shouldFail } from '@kypa/sdk';
 
 export interface Toolkit {
   getInput(name: string, options?: { required?: boolean }): string;
+
   setSecret(secret: string): void;
+
   setOutput(name: string, value: string | number): void;
+
   setFailed(message: string): void;
+
   summary: {
     addHeading(text: string): unknown;
     addRaw(text: string): unknown;
     write(): Promise<unknown>;
   };
 }
+
 export interface ActionDependencies {
   load: typeof loadPolicy;
   scan: (
@@ -28,6 +33,7 @@ export interface ActionDependencies {
     token: string,
   ) => Promise<Report>;
 }
+
 const defaults: ActionDependencies = {
   load: loadPolicy,
   scan: (policy, directory, digest, token) =>
@@ -47,6 +53,7 @@ const defaults: ActionDependencies = {
       policyDigest: digest,
     }),
 };
+
 export async function run(
   toolkit: Toolkit = core,
   dependencies: ActionDependencies = defaults,

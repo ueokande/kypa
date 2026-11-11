@@ -19,6 +19,7 @@ export const fullSha: Rule = {
   requiredEvidence: ['github/action-references@1'],
   defaultSeverity: 'high',
   validateParameters: (input) => z.object({}).strict().parse(input),
+
   evaluate(_resource, evidence) {
     const item = evidence['github/action-references@1'];
     if (item?.state === 'not-applicable')
@@ -51,6 +52,7 @@ export const requiredReviews: Rule = {
       .object({ minimum: z.number().int().min(1).max(6).default(1) })
       .strict()
       .parse(input),
+
   evaluate(_resource, evidence, input) {
     const item: Evidence | undefined = evidence['github/classic-protection@1'];
     if (item?.state === 'not-applicable')

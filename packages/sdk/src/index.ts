@@ -3,9 +3,11 @@ export interface ResourceIdentity {
   type: string;
   id: string;
 }
+
 export function resourceKey(resource: ResourceIdentity): string {
   return `${resource.provider}/${resource.type}/${resource.id}`;
 }
+
 export const severities = [
   'info',
   'low',
@@ -13,27 +15,33 @@ export const severities = [
   'high',
   'critical',
 ] as const;
+
 export type Severity = (typeof severities)[number];
+
 export interface Resource extends ResourceIdentity {
   name: string;
   url: string;
   metadata: Record<string, string | boolean | number | null>;
 }
+
 export type Evidence =
   | { state: 'available'; observedAt: string; data: unknown }
   | { state: 'not-applicable'; observedAt: string }
   | { state: 'unavailable'; observedAt: string; code: string; message: string };
+
 export interface Location {
   path: string;
   line: number;
   url?: string;
 }
+
 export interface FindingDraft {
   key: string;
   message: string;
   remediation: string;
   location?: Location;
 }
+
 export interface Finding extends FindingDraft {
   id: string;
   resource: string;
@@ -41,13 +49,16 @@ export interface Finding extends FindingDraft {
   ruleVersion: string;
   severity: Severity;
 }
+
 export interface Rule {
   id: string;
   version: string;
   resourceTypes: readonly string[];
   requiredEvidence: readonly string[];
   defaultSeverity: Severity;
+
   validateParameters(input: unknown): unknown;
+
   evaluate(
     resource: Resource,
     evidence: Record<string, Evidence>,
@@ -57,6 +68,7 @@ export interface Rule {
     findings: FindingDraft[];
   };
 }
+
 export interface ScanError {
   phase: 'discovery' | 'collection' | 'evaluation';
   code: string;
@@ -64,11 +76,13 @@ export interface ScanError {
   resource?: string;
   rule?: string;
 }
+
 export interface Discovery {
   resources: Resource[];
   errors: ScanError[];
   excluded: string[];
 }
+
 export interface TargetConfig {
   organizations: string[];
   repositories: string[];
@@ -76,20 +90,25 @@ export interface TargetConfig {
   includeArchived: boolean;
   includeForks: boolean;
 }
+
 export interface ScanSettings {
   concurrency: number;
   retries: number;
   requestTimeoutSeconds: number;
 }
+
 export interface Provider {
   id: string;
+
   discover(targets: TargetConfig, signal?: AbortSignal): Promise<Discovery>;
+
   collect(
     resource: Resource,
     evidenceIds: readonly string[],
     signal?: AbortSignal,
   ): Promise<Record<string, Evidence>>;
 }
+
 export interface Evaluation {
   resource: string;
   rule: string;
@@ -99,6 +118,7 @@ export interface Evaluation {
   findingIds: string[];
   evidence: { id: string; state: Evidence['state']; observedAt: string }[];
 }
+
 export interface Report {
   schemaVersion: 1;
   run: {
@@ -123,19 +143,23 @@ export interface Report {
   errors: ScanError[];
   warnings: string[];
 }
+
 export interface Reporter {
   id: string;
+
   write(
     report: Report,
     options: Record<string, string>,
     context: { policyDirectory: string; signal?: AbortSignal },
   ): Promise<void>;
 }
+
 export interface RuleSelection {
   id: string;
   severity: Severity;
   parameters: unknown;
 }
+
 export interface Policy {
   version: 1;
   targets: TargetConfig;
@@ -143,6 +167,7 @@ export interface Policy {
   rules: RuleSelection[];
   reporters: { name: string; options: Record<string, string> }[];
 }
+
 export class FatalError extends Error {
   constructor(
     public readonly code: string,
@@ -152,6 +177,7 @@ export class FatalError extends Error {
     this.name = 'FatalError';
   }
 }
+
 export function shouldFail(
   report: Report,
   policy: 'never' | 'violation' | 'error',

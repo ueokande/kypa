@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
 export const jsonReporter: Reporter = {
   id: 'json',
+
   async write(report, options, context) {
     if (!options.path) throw new Error('Missing JSON output path.');
     context.signal?.throwIfAborted();

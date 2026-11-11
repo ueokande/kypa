@@ -116,6 +116,7 @@ export function matchesPattern(name: string, pattern: string): boolean {
     .join('[^/]*');
   return new RegExp(`^${escaped}$`, 'i').test(name);
 }
+
 export function within(parent: string, child: string): boolean {
   const rel = path.relative(parent, child);
   return (
@@ -123,6 +124,7 @@ export function within(parent: string, child: string): boolean {
     (!path.isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${path.sep}`))
   );
 }
+
 async function canonical(localPath: string): Promise<string> {
   try {
     return await fsPromises.realpath(localPath);
@@ -136,6 +138,7 @@ async function canonical(localPath: string): Promise<string> {
     );
   }
 }
+
 export async function loadPolicy(
   localPath: string,
   rules: readonly Rule[],

@@ -9,6 +9,7 @@ const report = {
   findings: [{}],
   errors: [{}],
 } as Report;
+
 function toolkit(failOn = 'never'): Toolkit {
   return {
     getInput: (name) =>
@@ -24,6 +25,7 @@ function toolkit(failOn = 'never'): Toolkit {
     },
   };
 }
+
 const load = vi.fn(async () => ({
   policy: {} as Policy,
   directory: '/tmp',

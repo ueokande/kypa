@@ -9,6 +9,7 @@ function element<K extends keyof HTMLElementTagNameMap>(
   node.textContent = text;
   return node;
 }
+
 function select(label: string, values: string[]): HTMLSelectElement {
   const container = element('label', label);
   const control = element('select');
@@ -21,6 +22,7 @@ function select(label: string, values: string[]): HTMLSelectElement {
   document.querySelector('#filters')?.append(container);
   return control;
 }
+
 export function renderReport(report: Report): void {
   if (report.schemaVersion !== 1) throw new Error('Unsupported report format.');
   const main = element('main');
@@ -105,6 +107,7 @@ export function renderReport(report: Report): void {
       item.name,
     ]),
   );
+
   const update = () => {
     results.replaceChildren(element('h2', 'Evaluations'));
     const selected = report.evaluations.filter((item) => {
@@ -153,10 +156,12 @@ export function renderReport(report: Report): void {
       results.append(card);
     }
   };
+
   for (const control of [search, resource, rule, severity])
     control.addEventListener('input', update);
   update();
 }
+
 if (typeof document !== 'undefined') {
   fetch(new URL('data.json', document.baseURI))
     .then((response) => {

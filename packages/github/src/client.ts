@@ -1,5 +1,6 @@
 import * as timersPromises from 'node:timers/promises';
 import { FatalError, type ScanSettings } from '@kypa/sdk';
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -8,16 +9,20 @@ export class ApiError extends Error {
     super(`GitHub request failed (${code}).`);
   }
 }
+
 export interface ClientOptions extends ScanSettings {
   token: string;
   fetch?: typeof fetch;
   sleep?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
   now?: () => number;
 }
+
 export class GitHubClient {
   private active = 0;
   private waiters: (() => void)[] = [];
+
   constructor(private readonly options: ClientOptions) {}
+
   private async acquire(signal?: AbortSignal): Promise<void> {
     if (this.active < this.options.concurrency) {
       this.active++;
@@ -28,21 +33,25 @@ export class GitHubClient {
         signal?.removeEventListener('abort', abort);
         resolve();
       };
+
       const abort = () => {
         const index = this.waiters.indexOf(start);
         if (index !== -1) this.waiters.splice(index, 1);
         reject(signal?.reason ?? new Error('Request cancelled.'));
       };
+
       this.waiters.push(start);
       signal?.addEventListener('abort', abort, { once: true });
       if (signal?.aborted) abort();
     });
   }
+
   private release(): void {
     const next = this.waiters.shift();
     if (next) next();
     else this.active--;
   }
+
   async get(path: string, signal?: AbortSignal): Promise<unknown> {
     if (!path.startsWith('/') || path.startsWith('//'))
       throw new Error('Invalid API path.');
@@ -133,6 +142,7 @@ export class GitHubClient {
       throw new ApiError(response.status, limited ? 'RATE_LIMIT' : 'HTTP');
     }
   }
+
   private async pause(
     milliseconds: number,
     signal?: AbortSignal,

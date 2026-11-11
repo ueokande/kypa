@@ -2,6 +2,7 @@ import { expect, test, vi } from 'vitest';
 import { createGitHubProvider } from './index.js';
 
 const sha = 'a'.repeat(40);
+
 const repository = (id = 1, overrides = {}) => ({
   id,
   full_name: `org/repo-${id}`,
@@ -10,6 +11,7 @@ const repository = (id = 1, overrides = {}) => ({
   default_branch: 'main',
   ...overrides,
 });
+
 const targets = {
   organizations: ['org'],
   repositories: [],
@@ -23,6 +25,7 @@ const settings = {
   retries: 0,
   requestTimeoutSeconds: 30,
 };
+
 const transport =
   (route: (path: string) => unknown): typeof fetch =>
   async (input) => {
@@ -31,6 +34,7 @@ const transport =
     );
     return value instanceof Response ? value : Response.json(value);
   };
+
 test('discovers more than 100 repositories with pagination, union deduplication, and filters', async () => {
   const request = vi.fn(
     transport((path) =>

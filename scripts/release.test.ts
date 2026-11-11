@@ -15,11 +15,13 @@ afterEach(async () => {
       ),
   );
 });
+
 async function fixture() {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), 'kypa-release-'),
   );
   directories.push(directory);
+
   const git = (...args: string[]) =>
     childProcess
       .execFileSync('git', ['-C', directory, ...args], {
@@ -27,6 +29,7 @@ async function fixture() {
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       .trim();
+
   git('init', '--initial-branch=master');
   git('config', 'commit.gpgsign', 'false');
   await fsPromises.writeFile(path.join(directory, '.gitignore'), 'dist/\n');
@@ -66,6 +69,7 @@ async function fixture() {
   );
   return { directory, git, source };
 }
+
 test('release tag points to a generated commit while master remains source-only', async () => {
   const { directory, git, source } = await fixture();
   const result = await prepareRelease(directory, 'v0.1.0');

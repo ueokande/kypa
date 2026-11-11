@@ -2,6 +2,7 @@ import * as childProcess from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
+
 export async function prepareRelease(
   directory: string,
   version: string,
@@ -9,6 +10,7 @@ export async function prepareRelease(
 ): Promise<{ source: string; commit: string }> {
   if (!/^v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$/.test(version))
     throw new Error('An exact stable version tag is required.');
+
   const git = (...args: string[]) =>
     childProcess
       .execFileSync('git', ['-C', directory, ...args], {
@@ -16,6 +18,7 @@ export async function prepareRelease(
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       .trim();
+
   if (
     path.resolve(git('rev-parse', '--show-toplevel')) !==
     path.resolve(directory)
@@ -52,6 +55,7 @@ export async function prepareRelease(
     throw new Error('Release preparation requires a detached checkout.');
   const source = git('rev-parse', '--verify', 'HEAD^{commit}');
   const hashes: Record<string, string> = {};
+
   const walk = async (localPath: string): Promise<void> => {
     const absolute = path.join(directory, localPath);
     const stat = await fsPromises.lstat(absolute);
@@ -67,6 +71,7 @@ export async function prepareRelease(
         .digest('hex');
     else throw new Error('Unsupported release artifact.');
   };
+
   await walk('dist/action');
   await walk('dist/dashboard');
   if (!hashes['dist/action/index.js'] || !hashes['dist/dashboard/index.html'])

@@ -13,6 +13,7 @@ export function versionForRelease(
     throw new Error('Package and release manifest versions must match.');
   return `v${packageVersion}`;
 }
+
 export function notesForRelease(changelog: string, version: string): string {
   const heading = `## [${version.slice(1)}]`;
   const lines = changelog.split('\n');
@@ -41,6 +42,7 @@ export function sourceRelease(
     !/^source-v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$/.test(tag)
   )
     throw new Error('An exact source-vX.Y.Z tag is required.');
+
   const git = (...args: string[]) =>
     childProcess
       .execFileSync('git', ['-C', directory, ...args], {
@@ -48,6 +50,7 @@ export function sourceRelease(
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       .trim();
+
   const source = git('rev-parse', '--verify', `refs/tags/${tag}^{commit}`);
   if (!/^[a-f0-9]{40}$/.test(source) || (expectedSha && expectedSha !== source))
     throw new Error('Source tag does not match the release-please output.');
