@@ -11,6 +11,6 @@
     "build": "rsbuild build"
   },
   "devDependencies": {
-    "@rsbuild/core": "2.3.2"
+    "@rsbuild/core": "2.3.1"
   }
 }

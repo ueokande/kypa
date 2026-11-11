@@ -16,6 +16,8 @@ The initial reports are JSON and a generic static HTML dashboard containing the 
 
 Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
 
+Prefer supported dependency versions that satisfy pnpm's minimum release age. Keep `minimumReleaseAgeStrict` enabled. Do not add package/version-specific `minimumReleaseAgeExclude` entries merely to adopt the latest version; an exception needs a concrete requirement unavailable in mature supported versions.
+
 ## Node.js imports
 
 Use namespace imports for the following function-oriented built-in modules. This is a project convention, not a built-in Biome rule. Apply it consistently to application source, tests, and development/release scripts.
