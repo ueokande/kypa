@@ -1,13 +1,4 @@
-import {
-  cp,
-  lstat,
-  mkdir,
-  mkdtemp,
-  readFile,
-  rename,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
 export function createHtmlReporter(assetsDirectory: string): Reporter {
@@ -24,31 +15,37 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
         context.policyDirectory,
         options.directory,
       );
-      await mkdir(path.dirname(destination), { recursive: true });
-      const stage = await mkdtemp(
+      await fsPromises.mkdir(path.dirname(destination), { recursive: true });
+      const stage = await fsPromises.mkdtemp(
         path.join(path.dirname(destination), '.kypa-html-'),
       );
       try {
-        await cp(assetsDirectory, stage, {
+        await fsPromises.cp(assetsDirectory, stage, {
           recursive: true,
           dereference: false,
         });
-        const index = await readFile(path.join(stage, 'index.html'), 'utf8');
-        await writeFile(
+        const index = await fsPromises.readFile(
+          path.join(stage, 'index.html'),
+          'utf8',
+        );
+        await fsPromises.writeFile(
           path.join(stage, 'index.html'),
           index.replace('<head>', `<head><base href="${options.basePath}">`),
         );
-        await writeFile(path.join(stage, 'data.json'), JSON.stringify(report));
+        await fsPromises.writeFile(
+          path.join(stage, 'data.json'),
+          JSON.stringify(report),
+        );
         context.signal?.throwIfAborted();
         try {
-          await lstat(destination);
+          await fsPromises.lstat(destination);
           throw new Error('Output already exists.');
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         }
-        await rename(stage, destination);
+        await fsPromises.rename(stage, destination);
       } finally {
-        await rm(stage, { recursive: true, force: true });
+        await fsPromises.rm(stage, { recursive: true, force: true });
       }
     },
   };

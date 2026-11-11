@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { lstat, readFile, realpath } from 'node:fs/promises';
+import * as crypto from 'node:crypto';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import { FatalError, type Policy, type Rule, severities } from '@kypa/sdk';
 import { parseDocument } from 'yaml';
@@ -125,7 +125,7 @@ export function within(parent: string, child: string): boolean {
 }
 async function canonical(localPath: string): Promise<string> {
   try {
-    return await realpath(localPath);
+    return await fsPromises.realpath(localPath);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     const parent = path.dirname(localPath);
@@ -140,9 +140,9 @@ export async function loadPolicy(
   localPath: string,
   rules: readonly Rule[],
 ): Promise<{ policy: Policy; directory: string; digest: string }> {
-  const policyPath = await realpath(path.resolve(localPath));
+  const policyPath = await fsPromises.realpath(path.resolve(localPath));
   const directory = path.dirname(policyPath);
-  const text = await readFile(policyPath, 'utf8');
+  const text = await fsPromises.readFile(policyPath, 'utf8');
   const policy = parsePolicy(text, rules);
   const destinations: string[] = [];
   for (const reporter of policy.reporters) {
@@ -166,7 +166,7 @@ export async function loadPolicy(
       if (within(other, destination) || within(destination, other))
         throw new FatalError('OUTPUT_PATH', 'Reporter destinations overlap.');
     try {
-      await lstat(destination);
+      await fsPromises.lstat(destination);
       throw new FatalError(
         'OUTPUT_PATH',
         'Output destination already exists; use a fresh generated destination.',
@@ -179,6 +179,6 @@ export async function loadPolicy(
   return {
     policy,
     directory,
-    digest: createHash('sha256').update(text).digest('hex'),
+    digest: crypto.createHash('sha256').update(text).digest('hex'),
   };
 }

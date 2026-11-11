@@ -1,5 +1,5 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import * as fsPromises from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Report } from '@kypa/sdk';
 import { afterEach, expect, test } from 'vitest';
@@ -11,7 +11,9 @@ afterEach(async () => {
   await Promise.all(
     directories
       .splice(0)
-      .map((directory) => rm(directory, { recursive: true, force: true })),
+      .map((directory) =>
+        fsPromises.rm(directory, { recursive: true, force: true }),
+      ),
   );
 });
 const report = {
@@ -23,15 +25,19 @@ const report = {
 test.each(['/', '/monitor/'])(
   'reporters write portable HTML at %s without inline untrusted data',
   async (basePath) => {
-    const directory = await mkdtemp(path.join(tmpdir(), 'kypa-reporter-'));
+    const directory = await fsPromises.mkdtemp(
+      path.join(os.tmpdir(), 'kypa-reporter-'),
+    );
     directories.push(directory);
-    const assets = await mkdtemp(path.join(tmpdir(), 'kypa-assets-'));
+    const assets = await fsPromises.mkdtemp(
+      path.join(os.tmpdir(), 'kypa-assets-'),
+    );
     directories.push(assets);
-    await writeFile(
+    await fsPromises.writeFile(
       path.join(assets, 'index.html'),
       '<html><head></head><body><script src="./app.js"></script></body></html>',
     );
-    await writeFile(path.join(assets, 'app.js'), '/* fixture */');
+    await fsPromises.writeFile(path.join(assets, 'app.js'), '/* fixture */');
     await jsonReporter.write(
       report,
       { path: 'report/report.json' },
@@ -44,24 +50,28 @@ test.each(['/', '/monitor/'])(
     );
     expect(
       JSON.parse(
-        await readFile(path.join(directory, 'report/report.json'), 'utf8'),
+        await fsPromises.readFile(
+          path.join(directory, 'report/report.json'),
+          'utf8',
+        ),
       ),
     ).toEqual(report);
     expect(
       JSON.parse(
-        await readFile(path.join(directory, 'site/data.json'), 'utf8'),
+        await fsPromises.readFile(
+          path.join(directory, 'site/data.json'),
+          'utf8',
+        ),
       ),
     ).toEqual(report);
-    const html = await readFile(
+    const html = await fsPromises.readFile(
       path.join(directory, 'site/index.html'),
       'utf8',
     );
     expect(html).toContain(`<base href="${basePath}">`);
-    expect((await readdir(path.join(directory, 'site'))).sort()).toEqual([
-      'app.js',
-      'data.json',
-      'index.html',
-    ]);
+    expect(
+      (await fsPromises.readdir(path.join(directory, 'site'))).sort(),
+    ).toEqual(['app.js', 'data.json', 'index.html']);
     expect(html).not.toContain('alert(1)');
     await expect(
       jsonReporter.write(

@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import * as childProcess from 'node:child_process';
+import * as fsPromises from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { prepareRelease } from './release.js';
@@ -10,22 +10,31 @@ afterEach(async () => {
   await Promise.all(
     directories
       .splice(0)
-      .map((directory) => rm(directory, { recursive: true, force: true })),
+      .map((directory) =>
+        fsPromises.rm(directory, { recursive: true, force: true }),
+      ),
   );
 });
 async function fixture() {
-  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-release-'));
+  const directory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), 'kypa-release-'),
+  );
   directories.push(directory);
   const git = (...args: string[]) =>
-    execFileSync('git', ['-C', directory, ...args], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
+    childProcess
+      .execFileSync('git', ['-C', directory, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      .trim();
   git('init', '--initial-branch=master');
   git('config', 'commit.gpgsign', 'false');
-  await writeFile(path.join(directory, '.gitignore'), 'dist/\n');
-  await writeFile(path.join(directory, 'package.json'), '{"version":"0.1.0"}');
-  await writeFile(
+  await fsPromises.writeFile(path.join(directory, '.gitignore'), 'dist/\n');
+  await fsPromises.writeFile(
+    path.join(directory, 'package.json'),
+    '{"version":"0.1.0"}',
+  );
+  await fsPromises.writeFile(
     path.join(directory, 'source.ts'),
     'export const version = 1;\n',
   );
@@ -41,13 +50,17 @@ async function fixture() {
   );
   const source = git('rev-parse', 'HEAD');
   git('checkout', '--detach', source);
-  await mkdir(path.join(directory, 'dist/action'), { recursive: true });
-  await mkdir(path.join(directory, 'dist/dashboard'), { recursive: true });
-  await writeFile(
+  await fsPromises.mkdir(path.join(directory, 'dist/action'), {
+    recursive: true,
+  });
+  await fsPromises.mkdir(path.join(directory, 'dist/dashboard'), {
+    recursive: true,
+  });
+  await fsPromises.writeFile(
     path.join(directory, 'dist/action/index.js'),
     '/* fixture action */',
   );
-  await writeFile(
+  await fsPromises.writeFile(
     path.join(directory, 'dist/dashboard/index.html'),
     '<html></html>',
   );
@@ -66,7 +79,10 @@ test('release tag points to a generated commit while master remains source-only'
       .every((localPath) => localPath.startsWith('dist/')),
   ).toBe(true);
   const provenance = JSON.parse(
-    await readFile(path.join(directory, 'dist/provenance.json'), 'utf8'),
+    await fsPromises.readFile(
+      path.join(directory, 'dist/provenance.json'),
+      'utf8',
+    ),
   );
   expect(provenance.source).toBe(source);
   expect(provenance.sha256['dist/action/index.js']).toMatch(/^[a-f0-9]{64}$/);
@@ -82,9 +98,9 @@ test('invalid/mismatched versions, dirty source, and missing artifacts block pre
     'exact stable',
   );
   await expect(prepareRelease(directory, 'v1.0.0')).rejects.toThrow('match');
-  await rm(path.join(directory, 'dist/action/index.js'));
+  await fsPromises.rm(path.join(directory, 'dist/action/index.js'));
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('missing');
-  await writeFile(path.join(directory, 'source.ts'), 'changed');
+  await fsPromises.writeFile(path.join(directory, 'source.ts'), 'changed');
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('clean');
 });
 
@@ -99,13 +115,17 @@ test('publication retries reuse an identical tag without moving it and reject ch
   const { directory, git, source } = await fixture();
   const first = await prepareRelease(directory, 'v0.1.0');
   git('checkout', '--detach', source);
-  await mkdir(path.join(directory, 'dist/action'), { recursive: true });
-  await mkdir(path.join(directory, 'dist/dashboard'), { recursive: true });
-  await writeFile(
+  await fsPromises.mkdir(path.join(directory, 'dist/action'), {
+    recursive: true,
+  });
+  await fsPromises.mkdir(path.join(directory, 'dist/dashboard'), {
+    recursive: true,
+  });
+  await fsPromises.writeFile(
     path.join(directory, 'dist/action/index.js'),
     '/* fixture action */',
   );
-  await writeFile(
+  await fsPromises.writeFile(
     path.join(directory, 'dist/dashboard/index.html'),
     '<html></html>',
   );
@@ -113,7 +133,7 @@ test('publication retries reuse an identical tag without moving it and reject ch
     await prepareRelease(directory, 'v0.1.0', { reuseExisting: true }),
   ).toEqual(first);
   expect(git('rev-parse', 'HEAD')).toBe(source);
-  await writeFile(
+  await fsPromises.writeFile(
     path.join(directory, 'dist/action/index.js'),
     'changed build',
   );

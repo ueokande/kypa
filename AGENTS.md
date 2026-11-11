@@ -16,7 +16,27 @@ The initial reports are JSON and a generic static HTML dashboard containing the 
 
 Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
 
-Use namespace imports for node:path: `import * as path from 'node:path'`, with qualified calls such as `path.join(...)`. Avoid named imports from that module.
+## Node.js imports
+
+Use namespace imports for the following function-oriented built-in modules. This is a project convention, not a built-in Biome rule. Apply it consistently to application source, tests, and development/release scripts.
+
+| Module                 | Namespace        |
+| ---------------------- | ---------------- |
+| `node:path`            | `path`           |
+| `node:fs`              | `fs`             |
+| `node:fs/promises`     | `fsPromises`     |
+| `node:crypto`          | `crypto`         |
+| `node:os`              | `os`             |
+| `node:url`             | `url`            |
+| `node:child_process`   | `childProcess`   |
+| `node:timers`          | `timers`         |
+| `node:timers/promises` | `timersPromises` |
+
+Use qualified members such as `path.join(...)`, `fsPromises.readFile(...)`, and `crypto.createHash(...)`; do not destructure these namespaces. Use the same namespace even when importing only one member. Keep `fs` and `fsPromises` distinct so adding synchronous APIs does not require renaming existing imports. Prefer static imports; if lazy loading is necessary, retain the dynamic import's namespace rather than destructuring it.
+
+Keep the existing default import for assertions, such as `import assert from 'node:assert/strict'`. Type-only named imports using `import type { ... }` are allowed. External libraries and internal workspace packages are outside this convention. Other built-in modules remain a case-by-case choice; add frequently used function-oriented modules to this table when adopting a consistent convention. Rename conflicting local bindings to descriptive names instead of inventing namespace aliases.
+
+Do not add a blanket Biome restriction that rejects allowed type-only imports or changes assertion imports. Record and review this convention here unless equivalent lint enforcement can preserve all exceptions.
 
 ## Architecture
 

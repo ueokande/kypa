@@ -1,3 +1,4 @@
+import * as timersPromises from 'node:timers/promises';
 import { FatalError, type ScanSettings } from '@kypa/sdk';
 export class ApiError extends Error {
   constructor(
@@ -137,7 +138,10 @@ export class GitHubClient {
     signal?: AbortSignal,
   ): Promise<void> {
     if (this.options.sleep) return this.options.sleep(milliseconds, signal);
-    const { setTimeout } = await import('node:timers/promises');
-    await setTimeout(milliseconds, undefined, signal ? { signal } : {});
+    await timersPromises.setTimeout(
+      milliseconds,
+      undefined,
+      signal ? { signal } : {},
+    );
   }
 }

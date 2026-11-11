@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import * as childProcess from 'node:child_process';
 
 const versionPattern = /^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$/;
 
@@ -42,10 +42,12 @@ export function sourceRelease(
   )
     throw new Error('An exact source-vX.Y.Z tag is required.');
   const git = (...args: string[]) =>
-    execFileSync('git', ['-C', directory, ...args], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
+    childProcess
+      .execFileSync('git', ['-C', directory, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      .trim();
   const source = git('rev-parse', '--verify', `refs/tags/${tag}^{commit}`);
   if (!/^[a-f0-9]{40}$/.test(source) || (expectedSha && expectedSha !== source))
     throw new Error('Source tag does not match the release-please output.');

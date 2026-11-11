@@ -1,4 +1,4 @@
-import { link, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
 export const jsonReporter: Reporter = {
@@ -7,13 +7,13 @@ export const jsonReporter: Reporter = {
     if (!options.path) throw new Error('Missing JSON output path.');
     context.signal?.throwIfAborted();
     const destination = path.resolve(context.policyDirectory, options.path);
-    await mkdir(path.dirname(destination), { recursive: true });
-    const stage = await mkdtemp(
+    await fsPromises.mkdir(path.dirname(destination), { recursive: true });
+    const stage = await fsPromises.mkdtemp(
       path.join(path.dirname(destination), '.kypa-json-'),
     );
     try {
       const file = path.join(stage, 'report.json');
-      await writeFile(
+      await fsPromises.writeFile(
         file,
         `${JSON.stringify(report, null, 2)}
 `,
@@ -21,9 +21,9 @@ export const jsonReporter: Reporter = {
       );
       context.signal?.throwIfAborted();
       // An exclusive hard link publishes a complete file without replacing existing source.
-      await link(file, destination);
+      await fsPromises.link(file, destination);
     } finally {
-      await rm(stage, { recursive: true, force: true });
+      await fsPromises.rm(stage, { recursive: true, force: true });
     }
   },
 };

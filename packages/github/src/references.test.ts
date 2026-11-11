@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs';
 import { expect, test } from 'vitest';
 import { collectReferences } from './references.js';
 
 const fixture = (name: string) =>
-  readFileSync(
+  fs.readFileSync(
     new URL(`../../rules/fixtures/${name}.yml`, import.meta.url),
     'utf8',
   );

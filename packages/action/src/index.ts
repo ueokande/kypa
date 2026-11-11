@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as url from 'node:url';
 import * as core from '@actions/core';
 import { loadPolicy, runScan } from '@kypa/core';
 import { createGitHubProvider } from '@kypa/github';
@@ -38,7 +38,7 @@ const defaults: ActionDependencies = {
         jsonReporter,
         createHtmlReporter(
           path.resolve(
-            path.dirname(fileURLToPath(import.meta.url)),
+            path.dirname(url.fileURLToPath(import.meta.url)),
             '../dashboard',
           ),
         ),

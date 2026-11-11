@@ -1,6 +1,6 @@
-import { execFileSync, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { lstat, readdir, readFile, writeFile } from 'node:fs/promises';
+import * as childProcess from 'node:child_process';
+import * as crypto from 'node:crypto';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 export async function prepareRelease(
   directory: string,
@@ -10,10 +10,12 @@ export async function prepareRelease(
   if (!/^v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$/.test(version))
     throw new Error('An exact stable version tag is required.');
   const git = (...args: string[]) =>
-    execFileSync('git', ['-C', directory, ...args], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
+    childProcess
+      .execFileSync('git', ['-C', directory, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      .trim();
   if (
     path.resolve(git('rev-parse', '--show-toplevel')) !==
     path.resolve(directory)
@@ -22,11 +24,11 @@ export async function prepareRelease(
   if (git('status', '--porcelain', '--untracked-files=all'))
     throw new Error('Release source must be clean.');
   const manifest = JSON.parse(
-    await readFile(path.join(directory, 'package.json'), 'utf8'),
+    await fsPromises.readFile(path.join(directory, 'package.json'), 'utf8'),
   ) as { version: string };
   if (version !== `v${manifest.version}`)
     throw new Error('Tag must match the root package version.');
-  const existing = spawnSync('git', [
+  const existing = childProcess.spawnSync('git', [
     '-C',
     directory,
     'show-ref',
@@ -39,7 +41,7 @@ export async function prepareRelease(
     !(existing.status === 0 && options.reuseExisting)
   )
     throw new Error('Tag already exists or could not be checked.');
-  const head = spawnSync('git', [
+  const head = childProcess.spawnSync('git', [
     '-C',
     directory,
     'symbolic-ref',
@@ -52,15 +54,16 @@ export async function prepareRelease(
   const hashes: Record<string, string> = {};
   const walk = async (localPath: string): Promise<void> => {
     const absolute = path.join(directory, localPath);
-    const stat = await lstat(absolute);
+    const stat = await fsPromises.lstat(absolute);
     if (stat.isSymbolicLink())
       throw new Error('Release artifacts must not contain symlinks.');
     if (stat.isDirectory()) {
-      for (const name of (await readdir(absolute)).sort())
+      for (const name of (await fsPromises.readdir(absolute)).sort())
         await walk(`${localPath}/${name}`);
     } else if (stat.isFile())
-      hashes[localPath] = createHash('sha256')
-        .update(await readFile(absolute))
+      hashes[localPath] = crypto
+        .createHash('sha256')
+        .update(await fsPromises.readFile(absolute))
         .digest('hex');
     else throw new Error('Unsupported release artifact.');
   };
@@ -91,7 +94,7 @@ export async function prepareRelease(
     )
       throw new Error('Existing tag has different source or artifacts.');
     for (const [path, hash] of Object.entries(hashes)) {
-      const content = execFileSync('git', [
+      const content = childProcess.execFileSync('git', [
         '-C',
         directory,
         'show',
@@ -99,7 +102,7 @@ export async function prepareRelease(
       ]);
       if (
         previous.sha256[path] !== hash ||
-        createHash('sha256').update(content).digest('hex') !== hash
+        crypto.createHash('sha256').update(content).digest('hex') !== hash
       )
         throw new Error(
           'Existing tag artifacts differ from the verified build.',
@@ -109,7 +112,7 @@ export async function prepareRelease(
       throw new Error('Existing tag has an unexpected parent.');
     return { source, commit: git('rev-parse', `${version}^{commit}`) };
   }
-  await writeFile(
+  await fsPromises.writeFile(
     path.join(directory, 'dist/provenance.json'),
     `${JSON.stringify({ version, source, sha256: hashes }, null, 2)}
 `,

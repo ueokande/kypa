@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import * as childProcess from 'node:child_process';
+import * as fsPromises from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as url from 'node:url';
 
-const root = fileURLToPath(new URL('../', import.meta.url));
+const root = url.fileURLToPath(new URL('../', import.meta.url));
 for (const scenario of ['report', 'violation', 'fatal']) {
-  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-action-smoke-'));
+  const directory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), 'kypa-action-smoke-'),
+  );
   try {
-    await writeFile(
+    await fsPromises.writeFile(
       path.join(directory, 'kypa.yaml'),
       `version: 1
 targets:
@@ -27,9 +29,9 @@ reporters:
     );
     const output = path.join(directory, 'outputs');
     const summary = path.join(directory, 'summary');
-    await writeFile(output, '');
-    await writeFile(summary, '');
-    const child = spawnSync(
+    await fsPromises.writeFile(output, '');
+    await fsPromises.writeFile(summary, '');
+    const child = childProcess.spawnSync(
       process.execPath,
       [
         '--import',
@@ -55,34 +57,40 @@ reporters:
       scenario === 'report' ? 0 : 1,
       child.stderr + child.stdout,
     );
-    const outputs = await readFile(output, 'utf8');
+    const outputs = await fsPromises.readFile(output, 'utf8');
     if (scenario === 'fatal') {
       assert.equal(outputs, '');
       continue;
     }
     const report = JSON.parse(
-      await readFile(path.join(directory, 'report/report.json'), 'utf8'),
+      await fsPromises.readFile(
+        path.join(directory, 'report/report.json'),
+        'utf8',
+      ),
     );
     assert.equal(report.run.status, 'complete');
     assert.equal(report.findings.length, 2);
     assert.equal(report.resources[0].metadata.scannedCommit, 'a'.repeat(40));
     assert.match(outputs, /violation-count/);
     assert.match(outputs, /complete/);
-    assert.match(await readFile(summary, 'utf8'), /Kypa scan/);
-    const html = await readFile(
+    assert.match(await fsPromises.readFile(summary, 'utf8'), /Kypa scan/);
+    const html = await fsPromises.readFile(
       path.join(directory, 'site/index.html'),
       'utf8',
     );
     assert.match(html, /<base href="\/monitor\/">/);
     assert.deepEqual(
       JSON.parse(
-        await readFile(path.join(directory, 'site/data.json'), 'utf8'),
+        await fsPromises.readFile(
+          path.join(directory, 'site/data.json'),
+          'utf8',
+        ),
       ),
       report,
     );
     assert.equal(JSON.stringify(report).includes('fixture-token'), false);
   } finally {
-    await rm(directory, { recursive: true, force: true });
+    await fsPromises.rm(directory, { recursive: true, force: true });
   }
 }
 console.log(

@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import * as childProcess from 'node:child_process';
+import * as fsPromises from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import {
@@ -28,17 +28,23 @@ afterEach(async () => {
   await Promise.all(
     directories
       .splice(0)
-      .map((localPath) => rm(localPath, { recursive: true, force: true })),
+      .map((localPath) =>
+        fsPromises.rm(localPath, { recursive: true, force: true }),
+      ),
   );
 });
 test('source tags resolve to master commits, independently of distribution tags', async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-source-'));
+  const directory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), 'kypa-source-'),
+  );
   directories.push(directory);
   const git = (...args: string[]) =>
-    execFileSync('git', ['-C', directory, ...args], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
+    childProcess
+      .execFileSync('git', ['-C', directory, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      .trim();
   git('init', '--initial-branch=master');
   git('config', 'commit.gpgsign', 'false');
   const identity = [
@@ -47,7 +53,7 @@ test('source tags resolve to master commits, independently of distribution tags'
     '-c',
     'user.email=fixture@example.org',
   ];
-  await writeFile(
+  await fsPromises.writeFile(
     path.join(directory, 'source.ts'),
     'export const version = 1;',
   );
@@ -57,8 +63,8 @@ test('source tags resolve to master commits, independently of distribution tags'
   git('update-ref', 'refs/remotes/origin/master', source);
   git('tag', 'source-v0.1.0');
   git('checkout', '--detach', source);
-  await mkdir(path.join(directory, 'dist'), { recursive: true });
-  await writeFile(path.join(directory, 'dist/index.js'), 'compiled');
+  await fsPromises.mkdir(path.join(directory, 'dist'), { recursive: true });
+  await fsPromises.writeFile(path.join(directory, 'dist/index.js'), 'compiled');
   git('add', '.');
   git(...identity, 'commit', '-m', 'compiled');
   git('tag', 'v0.1.0');

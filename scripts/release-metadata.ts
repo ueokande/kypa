@@ -1,4 +1,4 @@
-import { appendFile } from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
 import { sourceRelease } from './release-policy.ts';
 
 const tag = process.env.SOURCE_TAG;
@@ -10,7 +10,7 @@ const metadata = sourceRelease(
   tag,
   process.env.SOURCE_SHA || undefined,
 );
-await appendFile(
+await fsPromises.appendFile(
   output,
   `source=${metadata.source}\nsource_tag=${metadata.sourceTag}\nversion=${metadata.version}\n`,
 );

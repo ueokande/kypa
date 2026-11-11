@@ -1,5 +1,5 @@
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import * as fsPromises from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Rule } from '@kypa/sdk';
 import { afterEach, expect, test } from 'vitest';
@@ -28,7 +28,9 @@ afterEach(async () => {
   await Promise.all(
     directories
       .splice(0)
-      .map((directory) => rm(directory, { recursive: true, force: true })),
+      .map((directory) =>
+        fsPromises.rm(directory, { recursive: true, force: true }),
+      ),
   );
 });
 test('defaults collection controls and rule settings', () => {
@@ -61,11 +63,13 @@ test('patterns are case-insensitive, escape dots, and cannot cross owner boundar
   expect(matchesPattern('org/nested/name', 'org/*')).toBe(false);
 });
 test('rejects overlapping, existing, escaping, and symlink output destinations', async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-config-'));
+  const directory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), 'kypa-config-'),
+  );
   directories.push(directory);
   const file = path.join(directory, 'policy.yaml');
   const check = async (text: string) => {
-    await writeFile(file, text);
+    await fsPromises.writeFile(file, text);
     return loadPolicy(file, [rule]);
   };
   await expect(check(source)).resolves.toMatchObject({ directory });
@@ -80,10 +84,13 @@ test('rejects overlapping, existing, escaping, and symlink output destinations',
       `${source}  - name: html\n    options: {directory: report, basePath: /}\n`,
     ),
   ).rejects.toThrow();
-  await mkdir(path.join(directory, 'report'));
-  await writeFile(path.join(directory, 'report/report.json'), 'existing');
+  await fsPromises.mkdir(path.join(directory, 'report'));
+  await fsPromises.writeFile(
+    path.join(directory, 'report/report.json'),
+    'existing',
+  );
   await expect(check(source)).rejects.toThrow();
-  await symlink(tmpdir(), path.join(directory, 'escape'));
+  await fsPromises.symlink(os.tmpdir(), path.join(directory, 'escape'));
   await expect(
     check(source.replace('report/report.json', 'escape/new.json')),
   ).rejects.toThrow();

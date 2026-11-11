@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import * as crypto from 'node:crypto';
 import {
   type Evidence,
   FatalError,
@@ -53,7 +53,7 @@ export async function runScan(
   const report: Report = {
     schemaVersion: 1,
     run: {
-      id: (dependencies.runId ?? randomUUID)(),
+      id: (dependencies.runId ?? crypto.randomUUID)(),
       startedAt,
       completedAt: startedAt,
       toolVersion: packageInfo.version,
@@ -152,7 +152,8 @@ export async function runScan(
       try {
         const result = rule.evaluate(resource, evidence, selected.parameters);
         for (const finding of result.findings) {
-          const id = createHash('sha256')
+          const id = crypto
+            .createHash('sha256')
             .update(JSON.stringify([key, rule.id, finding.key]))
             .digest('hex');
           report.findings.push({
