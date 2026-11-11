@@ -5,10 +5,15 @@ on:
   workflow_dispatch:
     inputs:
       source-tag:
-        description: Existing source-vX.Y.Z tag to retry distribution (leave empty to run release-please)
+        description: Existing source-vX.Y.Z tag to rebuild or publish (leave empty to run release-please)
         required: false
         default: ""
         type: string
+      publish-only:
+        description: Publish an existing distribution tag without rebuilding (source-tag required)
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -16,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release-please:
-    if: github.ref == 'refs/heads/master' && inputs['source-tag'] == ''
+    if: github.ref == 'refs/heads/master' && inputs['source-tag'] == '' && !inputs['publish-only']
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -37,7 +42,7 @@ jobs:
   build:
     needs: release-please
     if: >-
-      !cancelled() && github.ref == 'refs/heads/master' &&
+      !cancelled() && github.ref == 'refs/heads/master' && !inputs['publish-only'] &&
       ((needs.release-please.result == 'success' && needs.release-please.outputs.created == 'true') ||
        (github.event_name == 'workflow_dispatch' && inputs['source-tag'] != ''))
     runs-on: ubuntu-latest
@@ -45,31 +50,39 @@ jobs:
     outputs:
       source: ${{ steps.release.outputs.source }}
       source_tag: ${{ steps.release.outputs.source_tag }}
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: master
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: .node-version
-      - name: Resolve and validate the source release tag
+      - name: Resolve the source release
         id: release
-        run: node scripts/release-metadata.ts
         env:
           SOURCE_TAG: ${{ inputs['source-tag'] || needs.release-please.outputs.source_tag }}
-          SOURCE_SHA: ${{ needs.release-please.outputs.source }}
+          EXPECTED_SOURCE: ${{ needs.release-please.outputs.source }}
+        run: |
+          [[ "$SOURCE_TAG" =~ ^source-v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$ ]]
+          source=$(git rev-parse --verify "refs/tags/${SOURCE_TAG}^{commit}")
+          git merge-base --is-ancestor "$source" origin/master
+          [[ -z "$EXPECTED_SOURCE" || "$source" == "$EXPECTED_SOURCE" ]]
+          {
+            echo "source=$source"
+            echo "source_tag=$SOURCE_TAG"
+            echo "version=${SOURCE_TAG#source-}"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ steps.release.outputs.source }}
           persist-credentials: false
-      - name: Validate the released version
-        id: version
-        run: node scripts/release-version.ts
+      - name: Match the source tag and package versions
         env:
           SOURCE_TAG: ${{ steps.release.outputs.source_tag }}
+        run: |
+          package_version=$(jq -er '.version' package.json)
+          manifest_version=$(jq -er '.["."]' .release-please-manifest.json)
+          [[ "$SOURCE_TAG" == "source-v$package_version" && "$package_version" == "$manifest_version" ]]
       - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -95,27 +108,50 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.build.outputs.version }}
       SOURCE_TAG: ${{ needs.build.outputs.source_tag }}
+      SOURCE_SHA: ${{ needs.build.outputs.source }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.build.outputs.source }}
           fetch-depth: 0
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: .node-version
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: action-release-build
           path: dist
       - name: Copy source GitHub Release notes
         run: gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/kypa-release-notes.md"
-      - name: Prepare generated commit and annotated tag
-        run: node scripts/prepare-release.ts
-      - name: Push only the exact distribution tag
-        run: git push origin "refs/tags/$RELEASE_VERSION"
-      - name: Publish distribution GitHub Release
+      - name: Commit the build and create an immutable distribution tag
         run: |
-          if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
-            gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
-          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --force -- dist/action dist/dashboard
+          git commit -m "release: prepare $RELEASE_VERSION from $SOURCE_SHA"
+          git tag --annotate "$RELEASE_VERSION" -m "Release $RELEASE_VERSION (source $SOURCE_SHA)"
+          git push origin "refs/tags/$RELEASE_VERSION"
+      - name: Publish distribution GitHub Release
+        run: gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
+  publish-existing:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs['publish-only']
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      SOURCE_TAG: ${{ inputs['source-tag'] }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Publish only the existing distribution tag
+        run: |
+          [[ "$SOURCE_TAG" =~ ^source-v(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$ ]]
+          version=${SOURCE_TAG#source-}
+          source=$(git rev-parse --verify "refs/tags/${SOURCE_TAG}^{commit}")
+          git merge-base --is-ancestor "$source" origin/master
+          [[ "$(git rev-parse --verify "refs/tags/${version}^")" == "$source" ]]
+          gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/kypa-release-notes.md"
+          gh release create "$version" --verify-tag --title "$version" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
