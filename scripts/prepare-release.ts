@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import * as path from 'node:path';
 import { prepareRelease } from './release.ts';
 import { notesForRelease } from './release-policy.ts';
 
@@ -11,7 +11,7 @@ const result = await prepareRelease(process.cwd(), version, {
   reuseExisting: true,
 });
 await writeFile(
-  join(process.env.RUNNER_TEMP, 'kypa-release-notes.md'),
+  path.join(process.env.RUNNER_TEMP, 'kypa-release-notes.md'),
   `${notes}\n\nSource commit: ${result.source}\nAction commit: ${result.commit}\n`,
 );
 console.log(

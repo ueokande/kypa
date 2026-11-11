@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { prepareRelease } from './release.js';
 
@@ -14,7 +14,7 @@ afterEach(async () => {
   );
 });
 async function fixture() {
-  const directory = await mkdtemp(join(tmpdir(), 'kypa-release-'));
+  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-release-'));
   directories.push(directory);
   const git = (...args: string[]) =>
     execFileSync('git', ['-C', directory, ...args], {
@@ -23,9 +23,12 @@ async function fixture() {
     }).trim();
   git('init', '--initial-branch=master');
   git('config', 'commit.gpgsign', 'false');
-  await writeFile(join(directory, '.gitignore'), 'dist/\n');
-  await writeFile(join(directory, 'package.json'), '{"version":"0.1.0"}');
-  await writeFile(join(directory, 'source.ts'), 'export const version = 1;\n');
+  await writeFile(path.join(directory, '.gitignore'), 'dist/\n');
+  await writeFile(path.join(directory, 'package.json'), '{"version":"0.1.0"}');
+  await writeFile(
+    path.join(directory, 'source.ts'),
+    'export const version = 1;\n',
+  );
   git('add', '.');
   git(
     '-c',
@@ -38,14 +41,14 @@ async function fixture() {
   );
   const source = git('rev-parse', 'HEAD');
   git('checkout', '--detach', source);
-  await mkdir(join(directory, 'dist/action'), { recursive: true });
-  await mkdir(join(directory, 'dist/dashboard'), { recursive: true });
+  await mkdir(path.join(directory, 'dist/action'), { recursive: true });
+  await mkdir(path.join(directory, 'dist/dashboard'), { recursive: true });
   await writeFile(
-    join(directory, 'dist/action/index.js'),
+    path.join(directory, 'dist/action/index.js'),
     '/* fixture action */',
   );
   await writeFile(
-    join(directory, 'dist/dashboard/index.html'),
+    path.join(directory, 'dist/dashboard/index.html'),
     '<html></html>',
   );
   return { directory, git, source };
@@ -60,10 +63,10 @@ test('release tag points to a generated commit while master remains source-only'
   expect(
     git('diff-tree', '--no-commit-id', '--name-only', '-r', result.commit)
       .split('\n')
-      .every((path) => path.startsWith('dist/')),
+      .every((localPath) => localPath.startsWith('dist/')),
   ).toBe(true);
   const provenance = JSON.parse(
-    await readFile(join(directory, 'dist/provenance.json'), 'utf8'),
+    await readFile(path.join(directory, 'dist/provenance.json'), 'utf8'),
   );
   expect(provenance.source).toBe(source);
   expect(provenance.sha256['dist/action/index.js']).toMatch(/^[a-f0-9]{64}$/);
@@ -79,9 +82,9 @@ test('invalid/mismatched versions, dirty source, and missing artifacts block pre
     'exact stable',
   );
   await expect(prepareRelease(directory, 'v1.0.0')).rejects.toThrow('match');
-  await rm(join(directory, 'dist/action/index.js'));
+  await rm(path.join(directory, 'dist/action/index.js'));
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('missing');
-  await writeFile(join(directory, 'source.ts'), 'changed');
+  await writeFile(path.join(directory, 'source.ts'), 'changed');
   await expect(prepareRelease(directory, 'v0.1.0')).rejects.toThrow('clean');
 });
 
@@ -96,21 +99,24 @@ test('publication retries reuse an identical tag without moving it and reject ch
   const { directory, git, source } = await fixture();
   const first = await prepareRelease(directory, 'v0.1.0');
   git('checkout', '--detach', source);
-  await mkdir(join(directory, 'dist/action'), { recursive: true });
-  await mkdir(join(directory, 'dist/dashboard'), { recursive: true });
+  await mkdir(path.join(directory, 'dist/action'), { recursive: true });
+  await mkdir(path.join(directory, 'dist/dashboard'), { recursive: true });
   await writeFile(
-    join(directory, 'dist/action/index.js'),
+    path.join(directory, 'dist/action/index.js'),
     '/* fixture action */',
   );
   await writeFile(
-    join(directory, 'dist/dashboard/index.html'),
+    path.join(directory, 'dist/dashboard/index.html'),
     '<html></html>',
   );
   expect(
     await prepareRelease(directory, 'v0.1.0', { reuseExisting: true }),
   ).toEqual(first);
   expect(git('rev-parse', 'HEAD')).toBe(source);
-  await writeFile(join(directory, 'dist/action/index.js'), 'changed build');
+  await writeFile(
+    path.join(directory, 'dist/action/index.js'),
+    'changed build',
+  );
   await expect(
     prepareRelease(directory, 'v0.1.0', { reuseExisting: true }),
   ).rejects.toThrow('differ');

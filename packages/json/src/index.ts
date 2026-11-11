@@ -1,16 +1,18 @@
 import { link, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
 export const jsonReporter: Reporter = {
   id: 'json',
   async write(report, options, context) {
     if (!options.path) throw new Error('Missing JSON output path.');
     context.signal?.throwIfAborted();
-    const destination = resolve(context.policyDirectory, options.path);
-    await mkdir(dirname(destination), { recursive: true });
-    const stage = await mkdtemp(join(dirname(destination), '.kypa-json-'));
+    const destination = path.resolve(context.policyDirectory, options.path);
+    await mkdir(path.dirname(destination), { recursive: true });
+    const stage = await mkdtemp(
+      path.join(path.dirname(destination), '.kypa-json-'),
+    );
     try {
-      const file = join(stage, 'report.json');
+      const file = path.join(stage, 'report.json');
       await writeFile(
         file,
         `${JSON.stringify(report, null, 2)}

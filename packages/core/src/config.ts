@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile, realpath } from 'node:fs/promises';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import * as path from 'node:path';
 import { FatalError, type Policy, type Rule, severities } from '@kypa/sdk';
 import { parseDocument } from 'yaml';
 import { z } from 'zod';
@@ -117,34 +117,37 @@ export function matchesPattern(name: string, pattern: string): boolean {
   return new RegExp(`^${escaped}$`, 'i').test(name);
 }
 export function within(parent: string, child: string): boolean {
-  const rel = relative(parent, child);
+  const rel = path.relative(parent, child);
   return (
     rel === '' ||
-    (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`))
+    (!path.isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${path.sep}`))
   );
 }
-async function canonical(path: string): Promise<string> {
+async function canonical(localPath: string): Promise<string> {
   try {
-    return await realpath(path);
+    return await realpath(localPath);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    const parent = dirname(path);
-    if (parent === path) return path;
-    return resolve(await canonical(parent), relative(parent, path));
+    const parent = path.dirname(localPath);
+    if (parent === localPath) return localPath;
+    return path.resolve(
+      await canonical(parent),
+      path.relative(parent, localPath),
+    );
   }
 }
 export async function loadPolicy(
-  path: string,
+  localPath: string,
   rules: readonly Rule[],
 ): Promise<{ policy: Policy; directory: string; digest: string }> {
-  const policyPath = await realpath(resolve(path));
-  const directory = dirname(policyPath);
+  const policyPath = await realpath(path.resolve(localPath));
+  const directory = path.dirname(policyPath);
   const text = await readFile(policyPath, 'utf8');
   const policy = parsePolicy(text, rules);
   const destinations: string[] = [];
   for (const reporter of policy.reporters) {
     const destination = await canonical(
-      resolve(
+      path.resolve(
         directory,
         reporter.options.path ?? reporter.options.directory ?? '',
       ),

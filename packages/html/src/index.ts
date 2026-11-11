@@ -8,7 +8,7 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import * as path from 'node:path';
 import type { Reporter } from '@kypa/sdk';
 export function createHtmlReporter(assetsDirectory: string): Reporter {
   return {
@@ -20,20 +20,25 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
         !/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(options.basePath)
       )
         throw new Error('Invalid HTML output options.');
-      const destination = resolve(context.policyDirectory, options.directory);
-      await mkdir(dirname(destination), { recursive: true });
-      const stage = await mkdtemp(join(dirname(destination), '.kypa-html-'));
+      const destination = path.resolve(
+        context.policyDirectory,
+        options.directory,
+      );
+      await mkdir(path.dirname(destination), { recursive: true });
+      const stage = await mkdtemp(
+        path.join(path.dirname(destination), '.kypa-html-'),
+      );
       try {
         await cp(assetsDirectory, stage, {
           recursive: true,
           dereference: false,
         });
-        const index = await readFile(join(stage, 'index.html'), 'utf8');
+        const index = await readFile(path.join(stage, 'index.html'), 'utf8');
         await writeFile(
-          join(stage, 'index.html'),
+          path.join(stage, 'index.html'),
           index.replace('<head>', `<head><base href="${options.basePath}">`),
         );
-        await writeFile(join(stage, 'data.json'), JSON.stringify(report));
+        await writeFile(path.join(stage, 'data.json'), JSON.stringify(report));
         context.signal?.throwIfAborted();
         try {
           await lstat(destination);

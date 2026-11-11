@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import * as path from 'node:path';
 
 const shaPattern = /^[a-f0-9]{40}$/;
 const versionPattern = /^[0-9]+[.][0-9]+[.][0-9]+$/;
@@ -8,7 +8,10 @@ export async function releaseBaseline(
   directory: string,
 ): Promise<string | undefined | null> {
   const manifest = JSON.parse(
-    await readFile(join(directory, '.release-please-manifest.json'), 'utf8'),
+    await readFile(
+      path.join(directory, '.release-please-manifest.json'),
+      'utf8',
+    ),
   ) as Record<string, string>;
   const version = manifest['.'];
   if (!version || !versionPattern.test(version))

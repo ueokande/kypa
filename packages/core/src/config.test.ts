@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import * as path from 'node:path';
 import type { Rule } from '@kypa/sdk';
 import { afterEach, expect, test } from 'vitest';
 import { loadPolicy, matchesPattern, parsePolicy } from './config.js';
@@ -61,9 +61,9 @@ test('patterns are case-insensitive, escape dots, and cannot cross owner boundar
   expect(matchesPattern('org/nested/name', 'org/*')).toBe(false);
 });
 test('rejects overlapping, existing, escaping, and symlink output destinations', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'kypa-config-'));
+  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-config-'));
   directories.push(directory);
-  const file = join(directory, 'policy.yaml');
+  const file = path.join(directory, 'policy.yaml');
   const check = async (text: string) => {
     await writeFile(file, text);
     return loadPolicy(file, [rule]);
@@ -80,10 +80,10 @@ test('rejects overlapping, existing, escaping, and symlink output destinations',
       `${source}  - name: html\n    options: {directory: report, basePath: /}\n`,
     ),
   ).rejects.toThrow();
-  await mkdir(join(directory, 'report'));
-  await writeFile(join(directory, 'report/report.json'), 'existing');
+  await mkdir(path.join(directory, 'report'));
+  await writeFile(path.join(directory, 'report/report.json'), 'existing');
   await expect(check(source)).rejects.toThrow();
-  await symlink(tmpdir(), join(directory, 'escape'));
+  await symlink(tmpdir(), path.join(directory, 'escape'));
   await expect(
     check(source.replace('report/report.json', 'escape/new.json')),
   ).rejects.toThrow();

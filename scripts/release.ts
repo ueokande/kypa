@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, readdir, readFile, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import * as path from 'node:path';
 export async function prepareRelease(
   directory: string,
   version: string,
@@ -14,12 +14,15 @@ export async function prepareRelease(
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
-  if (resolve(git('rev-parse', '--show-toplevel')) !== resolve(directory))
+  if (
+    path.resolve(git('rev-parse', '--show-toplevel')) !==
+    path.resolve(directory)
+  )
     throw new Error('Run from the checkout root.');
   if (git('status', '--porcelain', '--untracked-files=all'))
     throw new Error('Release source must be clean.');
   const manifest = JSON.parse(
-    await readFile(join(directory, 'package.json'), 'utf8'),
+    await readFile(path.join(directory, 'package.json'), 'utf8'),
   ) as { version: string };
   if (version !== `v${manifest.version}`)
     throw new Error('Tag must match the root package version.');
@@ -47,16 +50,16 @@ export async function prepareRelease(
     throw new Error('Release preparation requires a detached checkout.');
   const source = git('rev-parse', '--verify', 'HEAD^{commit}');
   const hashes: Record<string, string> = {};
-  const walk = async (path: string): Promise<void> => {
-    const absolute = join(directory, path);
+  const walk = async (localPath: string): Promise<void> => {
+    const absolute = path.join(directory, localPath);
     const stat = await lstat(absolute);
     if (stat.isSymbolicLink())
       throw new Error('Release artifacts must not contain symlinks.');
     if (stat.isDirectory()) {
       for (const name of (await readdir(absolute)).sort())
-        await walk(`${path}/${name}`);
+        await walk(`${localPath}/${name}`);
     } else if (stat.isFile())
-      hashes[path] = createHash('sha256')
+      hashes[localPath] = createHash('sha256')
         .update(await readFile(absolute))
         .digest('hex');
     else throw new Error('Unsupported release artifact.');
@@ -107,7 +110,7 @@ export async function prepareRelease(
     return { source, commit: git('rev-parse', `${version}^{commit}`) };
   }
   await writeFile(
-    join(directory, 'dist/provenance.json'),
+    path.join(directory, 'dist/provenance.json'),
     `${JSON.stringify({ version, source, sha256: hashes }, null, 2)}
 `,
   );

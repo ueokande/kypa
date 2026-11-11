@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'node:path';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
 import { loadPolicy, runScan } from '@kypa/core';
@@ -37,7 +37,10 @@ const defaults: ActionDependencies = {
       reporters: [
         jsonReporter,
         createHtmlReporter(
-          resolve(dirname(fileURLToPath(import.meta.url)), '../dashboard'),
+          path.resolve(
+            path.dirname(fileURLToPath(import.meta.url)),
+            '../dashboard',
+          ),
         ),
       ],
       policyDirectory: directory,

@@ -16,6 +16,8 @@ The initial reports are JSON and a generic static HTML dashboard containing the 
 
 Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
 
+Use namespace imports for node:path: `import * as path from 'node:path'`, with qualified calls such as `path.join(...)`. Avoid named imports from that module.
+
 ## Architecture
 
 Keep these components separate through explicit, versioned interfaces:

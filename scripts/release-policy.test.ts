@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import {
   notesForRelease,
@@ -57,11 +57,11 @@ afterEach(async () => {
   await Promise.all(
     directories
       .splice(0)
-      .map((path) => rm(path, { recursive: true, force: true })),
+      .map((localPath) => rm(localPath, { recursive: true, force: true })),
   );
 });
 test('release-please uses the recorded source baseline rather than the off-branch compiled tag', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'kypa-baseline-'));
+  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-baseline-'));
   directories.push(directory);
   const git = (...args: string[]) =>
     execFileSync('git', ['-C', directory, ...args], {
@@ -77,14 +77,14 @@ test('release-please uses the recorded source baseline rather than the off-branc
     'user.email=fixture@example.org',
   ];
   await writeFile(
-    join(directory, '.release-please-manifest.json'),
+    path.join(directory, '.release-please-manifest.json'),
     '{".":"0.0.0"}',
   );
   git('add', '.');
   git(...identity, 'commit', '-m', 'source');
   expect(await releaseBaseline(directory)).toBeUndefined();
   await writeFile(
-    join(directory, '.release-please-manifest.json'),
+    path.join(directory, '.release-please-manifest.json'),
     '{".":"0.1.0"}',
   );
   git('add', '.');
@@ -92,9 +92,9 @@ test('release-please uses the recorded source baseline rather than the off-branc
   const source = git('rev-parse', 'HEAD');
   expect(await releaseBaseline(directory)).toBeNull();
   git('checkout', '--detach', source);
-  await mkdir(join(directory, 'dist'), { recursive: true });
+  await mkdir(path.join(directory, 'dist'), { recursive: true });
   await writeFile(
-    join(directory, 'dist/provenance.json'),
+    path.join(directory, 'dist/provenance.json'),
     JSON.stringify({ version: 'v0.1.0', source }),
   );
   git('add', '.');

@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 for (const scenario of ['report', 'violation', 'fatal']) {
-  const directory = await mkdtemp(join(tmpdir(), 'kypa-action-smoke-'));
+  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-action-smoke-'));
   try {
     await writeFile(
-      join(directory, 'kypa.yaml'),
+      path.join(directory, 'kypa.yaml'),
       `version: 1
 targets:
   repositories: [fixture/target]
@@ -25,16 +25,16 @@ reporters:
     options: {directory: site, basePath: /monitor/}
 `,
     );
-    const output = join(directory, 'outputs');
-    const summary = join(directory, 'summary');
+    const output = path.join(directory, 'outputs');
+    const summary = path.join(directory, 'summary');
     await writeFile(output, '');
     await writeFile(summary, '');
     const child = spawnSync(
       process.execPath,
       [
         '--import',
-        join(root, 'scripts/fixtures/github.ts'),
-        join(root, 'dist/action/index.js'),
+        path.join(root, 'scripts/fixtures/github.ts'),
+        path.join(root, 'dist/action/index.js'),
       ],
       {
         cwd: directory,
@@ -61,7 +61,7 @@ reporters:
       continue;
     }
     const report = JSON.parse(
-      await readFile(join(directory, 'report/report.json'), 'utf8'),
+      await readFile(path.join(directory, 'report/report.json'), 'utf8'),
     );
     assert.equal(report.run.status, 'complete');
     assert.equal(report.findings.length, 2);
@@ -69,10 +69,15 @@ reporters:
     assert.match(outputs, /violation-count/);
     assert.match(outputs, /complete/);
     assert.match(await readFile(summary, 'utf8'), /Kypa scan/);
-    const html = await readFile(join(directory, 'site/index.html'), 'utf8');
+    const html = await readFile(
+      path.join(directory, 'site/index.html'),
+      'utf8',
+    );
     assert.match(html, /<base href="\/monitor\/">/);
     assert.deepEqual(
-      JSON.parse(await readFile(join(directory, 'site/data.json'), 'utf8')),
+      JSON.parse(
+        await readFile(path.join(directory, 'site/data.json'), 'utf8'),
+      ),
       report,
     );
     assert.equal(JSON.stringify(report).includes('fixture-token'), false);
