@@ -1,5 +1,6 @@
 import * as timersPromises from "node:timers/promises";
 import { FatalError, type ScanSettings } from "@kypa/sdk";
+import { Octokit, RequestError } from "octokit";
 
 export class ApiError extends Error {
   constructor(
@@ -21,7 +22,38 @@ export class GitHubClient {
   private active = 0;
   private waiters: (() => void)[] = [];
 
-  constructor(private readonly options: ClientOptions) {}
+  private readonly api: Octokit;
+
+  constructor(private readonly options: ClientOptions) {
+    this.api = new Octokit({
+      auth: options.token,
+      userAgent: "kypa",
+      // The request hook owns Kypa's bounded, cancellable retry policy.
+      retry: { enabled: false },
+      throttle: { enabled: false },
+      // Octokit errors can include response bodies and request metadata.
+      log: { debug() {}, info() {}, warn() {}, error() {} },
+      request: {
+        fetch: (input: string | URL | Request, init?: RequestInit) => {
+          const destination = new URL(String(input));
+          if (destination.origin !== "https://api.github.com") {
+            throw new Error("Invalid API destination.");
+          }
+          return (options.fetch ?? fetch)(input, {
+            ...init,
+            redirect: "error",
+          });
+        },
+      },
+    });
+    this.api.hook.wrap("request", (request, parameters) =>
+      this.requestWithPolicy(async (signal) => {
+        parameters.headers["x-github-api-version"] = "2022-11-28";
+        parameters.request.signal = signal;
+        return request(parameters);
+      }, parameters.request.signal),
+    );
+  }
 
   private async acquire(signal?: AbortSignal): Promise<void> {
     if (this.active < this.options.concurrency) {
@@ -60,105 +92,115 @@ export class GitHubClient {
   }
 
   async get(path: string, signal?: AbortSignal): Promise<unknown> {
-    if (!path.startsWith("/") || path.startsWith("//")) {
+    this.validatePath(path);
+    const response = await this.api.request(`GET ${path}`, {
+      request: signal ? { signal } : {},
+    });
+    if (typeof response.data !== "object" || response.data === null) {
+      throw new ApiError(response.status, "INVALID_RESPONSE");
+    }
+    return response.data;
+  }
+
+  async *paginate(
+    path: string,
+    signal?: AbortSignal,
+  ): AsyncGenerator<unknown[]> {
+    this.validatePath(path);
+    const request = this.api.request.defaults({
+      method: "GET",
+      url: path,
+      per_page: 100,
+      request: signal ? { signal } : {},
+    });
+    for await (const response of this.api.paginate.iterator(request)) {
+      yield response.data;
+    }
+  }
+
+  private validatePath(path: string): void {
+    if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) {
       throw new Error("Invalid API path.");
     }
+  }
+
+  private async requestWithPolicy<T>(
+    request: (signal: AbortSignal) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       signal?.throwIfAborted();
       await this.acquire(signal);
-      let response: Response;
-      let body: string;
+      let failure: unknown;
       try {
+        signal?.throwIfAborted();
         const timeout = AbortSignal.timeout(
           this.options.requestTimeoutSeconds * 1000,
         );
-        response = await (this.options.fetch ?? fetch)(
-          `https://api.github.com${path}`,
-          {
-            headers: {
-              Authorization: `Bearer ${this.options.token}`,
-              Accept: "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
-            signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-            redirect: "error",
-          },
-        );
-        if (response.status === 401) {
-          throw new FatalError(
-            "AUTHENTICATION",
-            "GitHub authentication is unusable.",
-          );
-        }
-        body = await response.text();
+        const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+        const result = await request(combined);
+        combined.throwIfAborted();
+        return result;
       } catch (error) {
-        if (error instanceof FatalError) {
-          throw error;
-        }
         if (signal?.aborted) {
           signal.throwIfAborted();
         }
-        if (attempt >= this.options.retries) {
-          throw new ApiError(0, "NETWORK");
-        }
-        await this.pause(1000 * 2 ** attempt, signal);
-        continue;
+        failure = error;
       } finally {
         this.release();
       }
-      if (response.ok) {
-        try {
-          return JSON.parse(body);
-        } catch {
-          throw new ApiError(response.status, "INVALID_RESPONSE");
-        }
+      const response =
+        failure instanceof RequestError ? failure.response : undefined;
+      const status = response?.status ?? 0;
+      if (status === 401) {
+        throw new FatalError(
+          "AUTHENTICATION",
+          "GitHub authentication is unusable.",
+        );
       }
-      // Interpret only known status details; never expose raw response bodies.
-      if (response.status === 409) {
-        try {
-          const data: unknown = JSON.parse(body);
-          if (
-            data &&
-            typeof data === "object" &&
-            "message" in data &&
-            data.message === "Git Repository is empty."
-          ) {
-            throw new ApiError(409, "EMPTY_REPOSITORY");
-          }
-        } catch (error) {
-          if (error instanceof ApiError) {
-            throw error;
-          }
-        }
-      }
-      const limited =
-        response.status === 429 ||
-        (response.status === 403 &&
-          (response.headers.has("retry-after") ||
-            response.headers.get("x-ratelimit-remaining") === "0"));
+      const data: unknown = response?.data;
       if (
-        (limited || response.status >= 500) &&
+        status === 409 &&
+        data &&
+        typeof data === "object" &&
+        "message" in data &&
+        data.message === "Git Repository is empty."
+      ) {
+        throw new ApiError(409, "EMPTY_REPOSITORY");
+      }
+      const headers = response?.headers ?? {};
+      const limited =
+        status === 429 ||
+        (status === 403 &&
+          (headers["retry-after"] !== undefined ||
+            headers["x-ratelimit-remaining"] === "0"));
+      if (
+        (status === 0 || limited || status >= 500) &&
         attempt < this.options.retries
       ) {
         const now = (this.options.now ?? Date.now)();
-        const retry = response.headers.get("retry-after");
+        const retry = headers["retry-after"] ?? null;
         const seconds = retry === null ? Number.NaN : Number(retry);
-        const reset = Number(response.headers.get("x-ratelimit-reset")) * 1000;
+        const reset = Number(headers["x-ratelimit-reset"]) * 1000;
         const delay =
           retry !== null
             ? Number.isFinite(seconds)
               ? seconds * 1000
-              : Date.parse(retry) - now
+              : Date.parse(String(retry)) - now
             : limited && reset > now
               ? reset - now
               : 1000 * 2 ** attempt;
         if (!Number.isFinite(delay) || delay > 300_000) {
-          throw new ApiError(response.status, "RATE_LIMIT");
+          throw new ApiError(status, "RATE_LIMIT");
         }
         await this.pause(Math.max(0, delay), signal);
         continue;
       }
-      throw new ApiError(response.status, limited ? "RATE_LIMIT" : "HTTP");
+      // Never propagate Octokit errors, raw responses, or request metadata.
+      throw new ApiError(
+        status,
+        limited ? "RATE_LIMIT" : status === 0 ? "NETWORK" : "HTTP",
+      );
     }
   }
 

@@ -38,8 +38,15 @@ const transport =
 test("discovers more than 100 repositories with pagination, union deduplication, and filters", async () => {
   const request = vi.fn(
     transport((path) =>
-      path.includes("&page=1")
-        ? Array.from({ length: 100 }, (_, i) => repository(i + 1))
+      !path.includes("page=2")
+        ? Response.json(
+            Array.from({ length: 100 }, (_, i) => repository(i + 1)),
+            {
+              headers: {
+                link: '<https://api.github.com/orgs/org/repos?type=all&per_page=100&page=2>; rel="next"',
+              },
+            },
+          )
         : [repository(101), repository(102, { archived: true })],
     ),
   );

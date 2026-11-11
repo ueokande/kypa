@@ -7,7 +7,7 @@ globalThis.fetch = async (input, init) => {
     throw new Error("Unexpected network destination.");
   }
   if (
-    new Headers(init?.headers).get("authorization") !== "Bearer fixture-token"
+    new Headers(init?.headers).get("authorization") !== "token fixture-token"
   ) {
     throw new Error("Unexpected fixture authentication.");
   }

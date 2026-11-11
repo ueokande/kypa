@@ -123,9 +123,138 @@ test("the concurrency limit covers response body consumption as well as headers"
             }, 5);
           },
         }),
+        { headers: { "content-type": "application/json" } },
       );
     },
   });
   await Promise.all(Array.from({ length: 8 }, () => client.get("/x")));
   expect(maximum).toBe(2);
+});
+
+test("Octokit supplies authentication and API headers without allowing redirects", async () => {
+  const transport = vi.fn<typeof fetch>().mockResolvedValue(Response.json({}));
+  await new GitHubClient({ ...settings, fetch: transport }).get("/user");
+  const headers = new Headers(transport.mock.calls[0]?.[1]?.headers);
+  expect(headers.get("authorization")).toBe("token private-token");
+  expect(headers.get("accept")).toBe("application/vnd.github.v3+json");
+  expect(headers.get("x-github-api-version")).toBe("2022-11-28");
+  expect(transport.mock.calls[0]?.[1]?.redirect).toBe("error");
+});
+
+test("malformed JSON responses cannot become successful evidence or expose payloads", async () => {
+  const client = new GitHubClient({
+    ...settings,
+    fetch: async () =>
+      new Response("private-token invalid JSON", {
+        headers: { "content-type": "application/json" },
+      }),
+  });
+  await expect(client.get("/user")).rejects.toMatchObject({
+    status: 200,
+    code: "INVALID_RESPONSE",
+    message: "GitHub request failed (INVALID_RESPONSE).",
+  });
+});
+
+test("Octokit network failures obey the configured retry budget and are sanitized", async () => {
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockRejectedValue(new Error("private-token network payload"));
+  const client = new GitHubClient({
+    ...settings,
+    fetch: transport,
+    sleep: async () => {},
+  });
+  await expect(client.get("/user")).rejects.toMatchObject({
+    status: 0,
+    code: "NETWORK",
+    message: "GitHub request failed (NETWORK).",
+  });
+  expect(transport).toHaveBeenCalledTimes(3);
+});
+
+test("primary rate limits honor the reset time without retrying permission errors", async () => {
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response("", {
+        status: 403,
+        headers: { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "12" },
+      }),
+    )
+    .mockResolvedValueOnce(Response.json({}));
+  const sleep = vi.fn(async () => {});
+  await new GitHubClient({
+    ...settings,
+    fetch: transport,
+    sleep,
+    now: () => 10_000,
+  }).get("/user");
+  expect(sleep).toHaveBeenCalledWith(2000, undefined);
+  const forbidden = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(new Response("private-token", { status: 403 }));
+  await expect(
+    new GitHubClient({ ...settings, fetch: forbidden }).get("/user"),
+  ).rejects.toMatchObject({ code: "HTTP" });
+  expect(forbidden).toHaveBeenCalledTimes(1);
+});
+
+test("pagination preserves cancellation for subsequent page requests", async () => {
+  const controller = new AbortController();
+  const transport = vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json([{}], {
+      headers: {
+        link: '<https://api.github.com/orgs/org/repos?page=2>; rel="next"',
+      },
+    }),
+  );
+  const pages = new GitHubClient({ ...settings, fetch: transport }).paginate(
+    "/orgs/org/repos",
+    controller.signal,
+  );
+  expect((await pages.next()).value).toEqual([{}]);
+  controller.abort();
+  await expect(pages.next()).rejects.toThrow();
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+test("pagination never sends credentials to an external next-page URL", async () => {
+  const transport = vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json([{}], {
+      headers: { link: '<https://example.com/repos?page=2>; rel="next"' },
+    }),
+  );
+  const pages = new GitHubClient({
+    ...settings,
+    retries: 0,
+    fetch: transport,
+  }).paginate("/orgs/org/repos");
+  await pages.next();
+  await expect(pages.next()).rejects.toMatchObject({ code: "NETWORK" });
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+test("request timeouts remain bounded and consume only the configured retry budget", async () => {
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async (_input, init) => {
+      await new Promise((_, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => reject(init.signal?.reason),
+          { once: true },
+        );
+      });
+      return Response.json({});
+    });
+  const client = new GitHubClient({
+    ...settings,
+    requestTimeoutSeconds: 0.01,
+    retries: 1,
+    fetch: transport,
+    sleep: async () => {},
+  });
+  await expect(client.get("/user")).rejects.toMatchObject({ code: "NETWORK" });
+  expect(transport).toHaveBeenCalledTimes(2);
 });

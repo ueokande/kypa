@@ -88,19 +88,11 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         ...new Set(targets.organizations.map((value) => value.toLowerCase())),
       ]) {
         try {
-          for (let page = 1; ; page++) {
-            const repos = z
-              .array(z.unknown())
-              .parse(
-                await api.get(
-                  `/orgs/${encodeURIComponent(org)}/repos?type=all&per_page=100&page=${page}`,
-                  signal,
-                ),
-              );
-            repos.forEach(add);
-            if (repos.length < 100) {
-              break;
-            }
+          for await (const page of api.paginate(
+            `/orgs/${encodeURIComponent(org)}/repos?type=all`,
+            signal,
+          )) {
+            z.array(z.unknown()).parse(page).forEach(add);
           }
         } catch (error) {
           if (error instanceof FatalError || signal?.aborted) {
