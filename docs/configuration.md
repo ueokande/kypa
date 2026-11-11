@@ -37,7 +37,7 @@ reporters:
   - name: json
     options:
       path: report/report.json
-  - name: pages
+  - name: html
     options:
       directory: site
       basePath: /kypa-monitor/
@@ -79,10 +79,12 @@ Only rules listed in `rules` with `enabled` other than `false` run. `enabled` de
 
 ## Reporters
 
-`json` requires `options.path`, the destination JSON file. `pages` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/kypa-monitor/` for that project path. It must match the deployment URL.
+`json` requires `options.path`, the destination JSON file. `html` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/kypa-monitor/` for that project path. It must match the deployment URL.
 
-Output destinations must not overlap each other or overwrite source or configuration. For example, do not put the JSON file inside the Pages destination, point Pages at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.
+Output destinations must not overlap each other or overwrite source or configuration. For example, do not put the JSON file inside the HTML destination, point HTML at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.
 
-Output destinations must be fresh, dedicated paths beneath the policy directory; existing destinations, including prior generated reports, are rejected rather than overwritten. The standard workflow checks out a fresh central repository on each run. Clear only known generated outputs before a development rerun. Symlinks must not redirect output outside the policy directory. Pages base paths support slash-delimited letters, digits, hyphens, and underscores.
+Output destinations must be fresh, dedicated paths beneath the policy directory; existing destinations, including prior generated reports, are rejected rather than overwritten. The standard workflow checks out a fresh central repository on each run. Clear only known generated outputs before a development rerun. Symlinks must not redirect output outside the policy directory. HTML base paths support slash-delimited letters, digits, hyphens, and underscores.
 
 Retries honor server delays up to five minutes; longer delays produce an explicit coverage error rather than holding a workflow indefinitely. A truncated Git tree, unsupported file mode, or Action/workflow file larger than 1 MiB produces a collection error. These limits must not be interpreted as a passing evaluation.
+
+The `html` reporter produces a portable static site; it does not invoke any hosting API. Use the same directory with GitHub Pages, an internal HTTP server, or another access-controlled static host. Deployment and access restrictions are the hosting workflow's responsibility.

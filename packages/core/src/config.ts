@@ -55,7 +55,7 @@ const rawPolicy = z
             .strict(),
           z
             .object({
-              name: z.literal('pages'),
+              name: z.literal('html'),
               options: z
                 .object({
                   directory: z.string().min(1),

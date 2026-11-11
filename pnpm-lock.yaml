@@ -44,12 +44,12 @@ importers:
       '@kypa/github':
         specifier: workspace:*
         version: link:../github
+      '@kypa/html':
+        specifier: workspace:*
+        version: link:../html
       '@kypa/json':
         specifier: workspace:*
         version: link:../json
-      '@kypa/pages':
-        specifier: workspace:*
-        version: link:../pages
       '@kypa/rules':
         specifier: workspace:*
         version: link:../rules
@@ -84,13 +84,7 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/json:
-    dependencies:
-      '@kypa/sdk':
-        specifier: workspace:*
-        version: link:../sdk
-
-  packages/pages:
+  packages/html:
     dependencies:
       '@kypa/sdk':
         specifier: workspace:*
@@ -99,6 +93,12 @@ importers:
       '@rsbuild/core':
         specifier: 2.3.2
         version: 2.3.2
+
+  packages/json:
+    dependencies:
+      '@kypa/sdk':
+        specifier: workspace:*
+        version: link:../sdk
 
   packages/rules:
     dependencies:

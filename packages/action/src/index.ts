@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
 import { loadPolicy, runScan } from '@kypa/core';
 import { createGitHubProvider } from '@kypa/github';
+import { createHtmlReporter } from '@kypa/html';
 import { jsonReporter } from '@kypa/json';
-import { createPagesReporter } from '@kypa/pages';
 import { builtInRules } from '@kypa/rules';
 import { FatalError, type Policy, type Report, shouldFail } from '@kypa/sdk';
 
@@ -36,7 +36,7 @@ const defaults: ActionDependencies = {
       rules: builtInRules,
       reporters: [
         jsonReporter,
-        createPagesReporter(
+        createHtmlReporter(
           resolve(dirname(fileURLToPath(import.meta.url)), '../dashboard'),
         ),
       ],

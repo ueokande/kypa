@@ -21,7 +21,7 @@ rules:
 reporters:
   - name: json
     options: {path: report/report.json}
-  - name: pages
+  - name: html
     options: {directory: site, basePath: /monitor/}
 `,
     );
@@ -81,5 +81,5 @@ reporters:
   }
 }
 console.log(
-  'Bundled Action smoke checks passed: report generation, failure policy, fatal inputs, JSON and Pages assets.',
+  'Bundled Action smoke checks passed: report generation, failure policy, fatal inputs, JSON and HTML assets.',
 );

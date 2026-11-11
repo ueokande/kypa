@@ -10,7 +10,7 @@ Write repository documentation, code examples, and comments in English. Keep REA
 
 Initially support GitHub Enterprise Cloud on github.com, including organizations with more than 100 internal repositories. Discover organization repositories, accept explicit repositories, and apply exclusions. Run centrally through daily or manual GitHub Actions without installing workflows or changing settings in target repositories. Existing authentication and authorization remain necessary. Collect default-branch files and GitHub API settings. Do not require a GitHub App. Prefer fine-grained PATs when organization policy and required endpoints permit them. Never assume GITHUB_TOKEN can read other internal repositories.
 
-The initial reports are JSON and an access-controlled static GitHub Pages dashboard containing the latest scan only. History, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server are out of scope.
+The initial reports are JSON and a generic static HTML dashboard containing the latest scan only. The hosting service owns access control; GitHub Pages is one deployment option. History, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server are out of scope.
 
 ## Toolchain
 
@@ -26,10 +26,10 @@ Keep these components separate through explicit, versioned interfaces:
 | Provider / collector | Discovery, pagination, API and file collection, normalized evidence, credentials, and API details.                                                                            |
 | Rule                 | Declare resource types, required evidence, version, default severity, and runtime parameter schema. Evaluate collected evidence without credentials or network calls.         |
 | Core / runner        | Validate policy, resolve built-in components and targets, deduplicate requests, bound concurrency, retry with rate-limit handling, and evaluate rules.                        |
-| Reporter             | Consume the common scan report. Initially JSON and static Pages; adding formats must not change rules.                                                                        |
+| Reporter             | Consume the common scan report. Initially JSON and static HTML; adding formats must not change rules.                                                                         |
 | Action adapter       | Read workflow inputs, call the common runner directly, and translate structured results into outputs, summary, and step success/failure. Keep Actions APIs out of the runner. |
 
-Start with SDK, core, Action adapter, GitHub provider, GitHub rules, JSON reporter, and Pages reporter/dashboard packages. Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
+Start with SDK, core, Action adapter, GitHub provider, GitHub rules, JSON reporter, and HTML reporter/dashboard packages. Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
 
 Keep the source structure pluggable through explicit internal provider, rule, and reporter interfaces and dependency injection. Register built-in components centrally so the runner does not depend on individual implementations. Keep credentials and collection in providers, pure evidence evaluation in rules, and common-report rendering in reporters. Validate runtime policy parameters and reject duplicate component IDs. Preserve generic resource identity and versioned evidence so future providers do not require a repository-only model.
 
@@ -53,7 +53,7 @@ Violations must not prevent report generation or publication. Fatal configuratio
 
 ## Security and validation
 
-Use the PAT only for collection. Use GITHUB_TOKEN and OIDC for Pages deployment, separating scan and deployment permissions. Never publish secrets, raw API responses, or unnecessary source content. Escape untrusted rendered data.
+Use the PAT only for collection. Keep HTML generation independent of hosting APIs and metadata. Separate scan and host-specific deployment permissions; the GitHub Pages example uses GITHUB_TOKEN and OIDC. Never publish secrets, raw API responses, or unnecessary source content. Escape untrusted rendered data.
 
 Use fixture-based Vitest tests for rules, collection/evaluation failures, and reporters. Validate formatting, lint, types, tests, and relevant builds. Distinguish failed checks from unrun checks. Documentation-only examples cannot be claimed as tested against an implementation.
 

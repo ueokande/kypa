@@ -4,7 +4,7 @@
 
 Kypa is an OSS tool in development for scanning resource configuration against custom organizational policies, starting with GitHub Enterprise Cloud repositories.
 
-Run scans centrally without installing workflows in each target repository. A PAT collects accessible files and settings; a static GitHub Pages dashboard presents the latest results with access controls configured separately.
+Run scans centrally without installing workflows in each target repository. A PAT collects accessible files and settings; a static HTML dashboard presents the latest results on any static host, with access controls configured separately. GitHub Pages is one deployment option.
 
 **Status:** An initial TypeScript implementation is available in source, but no Action release has been published. Version tags shown in the manual are illustrative. No OSS license has been selected.
 

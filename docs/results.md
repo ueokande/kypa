@@ -40,8 +40,10 @@ Stable finding identity is intended to identify the same logical violation consi
 
 Consumers must check supported schema versions, completeness, and evaluation outcomes before interpreting finding counts. Reports must not contain secrets, raw API payloads, or unnecessary source content. Messages and locations may still reveal internal repository names and policy posture; restrict report access.
 
-## Pages output and freshness
+## HTML output and freshness
 
-The Pages reporter writes HTML, assets, and display data into its configured directory using `basePath` for deployed URLs. Routing must work on static hosting without a custom server or server-side API. Untrusted repository names, file paths, and messages must be escaped when rendered. Browser clients receive static data and never hold the collection PAT.
+The HTML reporter writes HTML, assets, and display data into its configured directory using `basePath` for deployed URLs. The output is independent of GitHub Pages and can be served by any static HTTP host, including an internal web server or object storage configured for static hosting. Routing works without a custom application server or server-side API. Open it through HTTP rather than file:// because the dashboard fetches data.json. Untrusted repository names, file paths, and messages must be escaped when rendered. Browser clients receive static data and never hold the collection PAT.
 
-Violations and partial results can publish with the Action input `fail-on: never`. Fatal scan/output failures block publication even if files were partially written. A failed deployment preserves the previous result; always inspect the scan timestamp and workflow state. A loading site is not proof of a fresh successful scan. See [GitHub Action](github-action.md).
+Violations and partial results can publish with the Action input `fail-on: never`. Fatal scan/output failures block publication even if files were partially written. With the example GitHub Pages workflow, a failed deployment preserves the previous result. Other hosts should use atomic publication or an equivalent mechanism to preserve the last complete site; always inspect the scan timestamp and workflow state. A loading site is not proof of a fresh successful scan. See [GitHub Action](github-action.md).
+
+The HTML reporter creates index.html, compiled JavaScript/CSS assets, and data.json. It does not deploy the site, configure authentication, set host-specific metadata, or require GitHub Pages. Set basePath to / for a root deployment or to the actual slash-delimited deployment prefix. Serve the complete directory and restrict access to data.json and assets as well as the HTML entry point.

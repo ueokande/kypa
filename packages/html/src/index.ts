@@ -10,19 +10,19 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { Reporter } from '@kypa/sdk';
-export function createPagesReporter(assetsDirectory: string): Reporter {
+export function createHtmlReporter(assetsDirectory: string): Reporter {
   return {
-    id: 'pages',
+    id: 'html',
     async write(report, options, context) {
       if (
         !options.directory ||
         !options.basePath ||
         !/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(options.basePath)
       )
-        throw new Error('Invalid Pages output options.');
+        throw new Error('Invalid HTML output options.');
       const destination = resolve(context.policyDirectory, options.directory);
       await mkdir(dirname(destination), { recursive: true });
-      const stage = await mkdtemp(join(dirname(destination), '.kypa-pages-'));
+      const stage = await mkdtemp(join(dirname(destination), '.kypa-html-'));
       try {
         await cp(assetsDirectory, stage, {
           recursive: true,
@@ -34,7 +34,6 @@ export function createPagesReporter(assetsDirectory: string): Reporter {
           index.replace('<head>', `<head><base href="${options.basePath}">`),
         );
         await writeFile(join(stage, 'data.json'), JSON.stringify(report));
-        await writeFile(join(stage, '.nojekyll'), '');
         context.signal?.throwIfAborted();
         try {
           await lstat(destination);

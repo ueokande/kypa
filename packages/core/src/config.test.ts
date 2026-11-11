@@ -77,7 +77,7 @@ test('rejects overlapping, existing, escaping, and symlink output destinations',
   ).rejects.toThrow();
   await expect(
     check(
-      `${source}  - name: pages\n    options: {directory: report, basePath: /}\n`,
+      `${source}  - name: html\n    options: {directory: report, basePath: /}\n`,
     ),
   ).rejects.toThrow();
   await mkdir(join(directory, 'report'));

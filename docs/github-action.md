@@ -1,4 +1,4 @@
-# GitHub Action and private Pages
+# GitHub Action and HTML reports
 
 > Proposed first-release Action contract. `ueokande/kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
 
@@ -29,7 +29,9 @@ After successful report generation, proposed outputs are:
 
 The Action also writes an aggregate job summary. Do not assume outputs exist after a fatal failure.
 
-## Configure access before publishing
+## Example deployment: private GitHub Pages
+
+The `html` reporter generates a portable static site. The workflow below uses GitHub Pages as one deployment example; you can replace its artifact/deploy steps with another static host while keeping the same scan and report configuration. Configure authentication and access restrictions on your chosen host.
 
 In the central execution repository, set Pages build source to **GitHub Actions** and explicitly configure private/access-controlled Pages visibility under your enterprise's supported settings. Verify access with an authorized viewer and an unauthorized viewer. Internal repository visibility alone is insufficient: Pages is not automatically private. Deployment does not configure visibility. Do not publish until the intended restriction is established.
 
@@ -93,7 +95,7 @@ jobs:
 
 The schedule requests 00:17 UTC / 09:17 JST daily. GitHub schedules are best effort, can be delayed, and run from the default branch. Keep the workflow and central policy on that branch. `workflow_dispatch` provides a manual run.
 
-For a project site at `/kypa-monitor/`, set `reporters` Pages `basePath` to `/kypa-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
+For a project site at `/kypa-monitor/`, set the `html` reporter’s `basePath` to `/kypa-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
 
 ## Publication behavior
 

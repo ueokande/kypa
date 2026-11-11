@@ -23,7 +23,7 @@ Check current GitHub endpoint documentation when issuing a token: permission and
 
 Create `KYPA_PAT` in the central repository's Actions secrets and pass it to the Action's required `token` input. Ordinary GITHUB_TOKEN is scoped to its workflow repository and must not be assumed sufficient for reading other internal repositories. A GitHub App installation is not required by Kypa's initial workflow.
 
-Keep collection permissions in the scan job and Pages write/OIDC permissions in the deployment job. The generated site must never contain the PAT, raw API payloads, or unnecessary source text. Browsers only receive static results; they never hold the PAT or call GitHub with it.
+Keep collection permissions in the scan job and host-specific deployment credentials in a separate deployment job. The GitHub Pages example uses Pages write/OIDC permissions; other static hosts use their own authentication. The generated site must never contain the PAT, raw API payloads, or unnecessary source text. Browsers only receive static results; they never hold the PAT or call GitHub with it.
 
 ## Operate safely
 

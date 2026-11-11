@@ -10,7 +10,7 @@
     "@kypa/github": "workspace:*",
     "@kypa/rules": "workspace:*",
     "@kypa/json": "workspace:*",
-    "@kypa/pages": "workspace:*",
+    "@kypa/html": "workspace:*",
     "@actions/core": "3.0.1"
   }
 }
