@@ -51,7 +51,18 @@ Keep these components separate through explicit, versioned interfaces:
 | Reporter             | Consume the common scan report. Initially JSON and static HTML; adding formats must not change rules.                                                                         |
 | Action adapter       | Read workflow inputs, call the common runner directly, and translate structured results into outputs, summary, and step success/failure. Keep Actions APIs out of the runner. |
 
-Start with SDK, core, Action adapter, GitHub provider, GitHub rules, JSON reporter, and HTML reporter/dashboard packages. Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
+Keep built-in component packages named by role and implementation:
+
+| Package                 | Directory                  | Role                                               |
+| ----------------------- | -------------------------- | -------------------------------------------------- |
+| `@kypa/provider-github` | `packages/provider-github` | GitHub resource discovery and evidence collection. |
+| `@kypa/rules-github`    | `packages/rules-github`    | Built-in GitHub evidence evaluation rules.         |
+| `@kypa/reporter-json`   | `packages/reporter-json`   | JSON report output.                                |
+| `@kypa/reporter-html`   | `packages/reporter-html`   | Portable HTML reporter and dashboard.              |
+
+The shared `@kypa/sdk`, `@kypa/core`, and `@kypa/action` packages retain their existing names. Use the same role-based naming for future built-in component packages. These names do not imply an external plugin API or npm publication.
+
+Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
 
 Keep the source structure pluggable through explicit internal provider, rule, and reporter interfaces and dependency injection. Register built-in components centrally so the runner does not depend on individual implementations. Keep credentials and collection in providers, pure evidence evaluation in rules, and common-report rendering in reporters. Validate runtime policy parameters and reject duplicate component IDs. Preserve generic resource identity and versioned evidence so future providers do not require a repository-only model.
 

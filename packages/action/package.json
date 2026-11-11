@@ -7,10 +7,10 @@
   "dependencies": {
     "@kypa/sdk": "workspace:*",
     "@kypa/core": "workspace:*",
-    "@kypa/github": "workspace:*",
-    "@kypa/rules": "workspace:*",
-    "@kypa/json": "workspace:*",
-    "@kypa/html": "workspace:*",
+    "@kypa/provider-github": "workspace:*",
+    "@kypa/rules-github": "workspace:*",
+    "@kypa/reporter-json": "workspace:*",
+    "@kypa/reporter-html": "workspace:*",
     "@actions/core": "3.0.1"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@kypa/github",
+  "name": "@kypa/provider-github",
   "version": "0.1.0",
   "private": true,
   "type": "module",

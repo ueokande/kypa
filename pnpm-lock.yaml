@@ -38,18 +38,18 @@ importers:
       '@kypa/core':
         specifier: workspace:*
         version: link:../core
-      '@kypa/github':
+      '@kypa/provider-github':
         specifier: workspace:*
-        version: link:../github
-      '@kypa/html':
+        version: link:../provider-github
+      '@kypa/reporter-html':
         specifier: workspace:*
-        version: link:../html
-      '@kypa/json':
+        version: link:../reporter-html
+      '@kypa/reporter-json':
         specifier: workspace:*
-        version: link:../json
-      '@kypa/rules':
+        version: link:../reporter-json
+      '@kypa/rules-github':
         specifier: workspace:*
-        version: link:../rules
+        version: link:../rules-github
       '@kypa/sdk':
         specifier: workspace:*
         version: link:../sdk
@@ -66,7 +66,7 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/github:
+  packages/provider-github:
     dependencies:
       '@kypa/core':
         specifier: workspace:*
@@ -81,7 +81,7 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/html:
+  packages/reporter-html:
     dependencies:
       '@kypa/sdk':
         specifier: workspace:*
@@ -91,13 +91,13 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
 
-  packages/json:
+  packages/reporter-json:
     dependencies:
       '@kypa/sdk':
         specifier: workspace:*
         version: link:../sdk
 
-  packages/rules:
+  packages/rules-github:
     dependencies:
       '@kypa/sdk':
         specifier: workspace:*

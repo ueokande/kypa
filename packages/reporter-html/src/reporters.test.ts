@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Report } from '@kypa/sdk';
 import { afterEach, expect, test } from 'vitest';
-import { jsonReporter } from '../../json/src/index.js';
+import { jsonReporter } from '../../reporter-json/src/index.js';
 import { createHtmlReporter } from './index.js';
 
 const directories: string[] = [];

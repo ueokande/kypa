@@ -2,10 +2,10 @@ import * as path from 'node:path';
 import * as url from 'node:url';
 import * as core from '@actions/core';
 import { loadPolicy, runScan } from '@kypa/core';
-import { createGitHubProvider } from '@kypa/github';
-import { createHtmlReporter } from '@kypa/html';
-import { jsonReporter } from '@kypa/json';
-import { builtInRules } from '@kypa/rules';
+import { createGitHubProvider } from '@kypa/provider-github';
+import { createHtmlReporter } from '@kypa/reporter-html';
+import { jsonReporter } from '@kypa/reporter-json';
+import { builtInRules } from '@kypa/rules-github';
 import { FatalError, type Policy, type Report, shouldFail } from '@kypa/sdk';
 
 export interface Toolkit {

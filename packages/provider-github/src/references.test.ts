@@ -4,7 +4,7 @@ import { collectReferences } from './references.js';
 
 const fixture = (name: string) =>
   fs.readFileSync(
-    new URL(`../../rules/fixtures/${name}.yml`, import.meta.url),
+    new URL(`../../rules-github/fixtures/${name}.yml`, import.meta.url),
     'utf8',
   );
 

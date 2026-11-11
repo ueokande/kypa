@@ -1,5 +1,5 @@
 {
-  "name": "@kypa/rules",
+  "name": "@kypa/rules-github",
   "version": "0.1.0",
   "private": true,
   "type": "module",

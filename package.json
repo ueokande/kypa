@@ -10,7 +10,7 @@
   "scripts": {
     "build": "pnpm build:dashboard && pnpm build:action",
     "build:action": "rslib build",
-    "build:dashboard": "pnpm --filter @kypa/html build",
+    "build:dashboard": "pnpm --filter @kypa/reporter-html build",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
