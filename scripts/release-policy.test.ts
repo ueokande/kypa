@@ -5,39 +5,10 @@ import * as path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import {
   notesForRelease,
-  releaseBaseline,
-  releasePullRequest,
+  sourceRelease,
   versionForRelease,
 } from './release-policy.js';
 
-const repository = 'ueokande/kypa';
-const pr = {
-  merged: true,
-  number: 10,
-  merge_commit_sha: 'a'.repeat(40),
-  base: { ref: 'master', repo: { full_name: repository } },
-  head: {
-    ref: 'release-please--branches--master',
-    repo: { full_name: repository },
-  },
-  labels: [{ name: 'autorelease: pending' }],
-};
-test('only merged same-repository Release PRs can publish', () => {
-  expect(releasePullRequest(pr, repository)).toEqual({
-    source: 'a'.repeat(40),
-    number: 10,
-  });
-  for (const change of [
-    { merged: false },
-    { labels: [] },
-    { merge_commit_sha: 'master' },
-    { head: { ...pr.head, repo: { full_name: 'other/fork' } } },
-    { head: { ...pr.head, ref: 'feature' } },
-  ])
-    expect(() =>
-      releasePullRequest({ ...pr, ...change }, repository),
-    ).toThrow();
-});
 test('version and changelog selection are exact', () => {
   expect(versionForRelease('0.1.0', '0.1.0')).toBe('v0.1.0');
   expect(() => versionForRelease('0.2.0', '0.1.0')).toThrow();
@@ -60,8 +31,8 @@ afterEach(async () => {
       .map((localPath) => rm(localPath, { recursive: true, force: true })),
   );
 });
-test('release-please uses the recorded source baseline rather than the off-branch compiled tag', async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-baseline-'));
+test('source tags resolve to master commits, independently of distribution tags', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'kypa-source-'));
   directories.push(directory);
   const git = (...args: string[]) =>
     execFileSync('git', ['-C', directory, ...args], {
@@ -77,30 +48,37 @@ test('release-please uses the recorded source baseline rather than the off-branc
     'user.email=fixture@example.org',
   ];
   await writeFile(
-    path.join(directory, '.release-please-manifest.json'),
-    '{".":"0.0.0"}',
+    path.join(directory, 'source.ts'),
+    'export const version = 1;',
   );
   git('add', '.');
   git(...identity, 'commit', '-m', 'source');
-  expect(await releaseBaseline(directory)).toBeUndefined();
-  await writeFile(
-    path.join(directory, '.release-please-manifest.json'),
-    '{".":"0.1.0"}',
-  );
-  git('add', '.');
-  git(...identity, 'commit', '-m', 'release PR');
   const source = git('rev-parse', 'HEAD');
-  expect(await releaseBaseline(directory)).toBeNull();
+  git('update-ref', 'refs/remotes/origin/master', source);
+  git('tag', 'source-v0.1.0');
   git('checkout', '--detach', source);
   await mkdir(path.join(directory, 'dist'), { recursive: true });
-  await writeFile(
-    path.join(directory, 'dist/provenance.json'),
-    JSON.stringify({ version: 'v0.1.0', source }),
-  );
+  await writeFile(path.join(directory, 'dist/index.js'), 'compiled');
   git('add', '.');
-  git(...identity, 'commit', '-m', 'compiled release');
+  git(...identity, 'commit', '-m', 'compiled');
   git('tag', 'v0.1.0');
-  git('checkout', 'master');
-  expect(await releaseBaseline(directory)).toBe(source);
+  expect(sourceRelease(directory, 'source-v0.1.0', source)).toEqual({
+    source,
+    sourceTag: 'source-v0.1.0',
+    version: 'v0.1.0',
+  });
   expect(git('rev-parse', 'v0.1.0')).not.toBe(source);
+  for (const invalid of [
+    'v0.1.0',
+    'master',
+    'source-v0.1.0;bad',
+    'source-v01.1.0',
+    'source-v0.2.0',
+  ])
+    expect(() => sourceRelease(directory, invalid)).toThrow();
+  expect(() =>
+    sourceRelease(directory, 'source-v0.1.0', 'b'.repeat(40)),
+  ).toThrow('does not match');
+  git('tag', 'source-v0.2.0');
+  expect(() => sourceRelease(directory, 'source-v0.2.0')).toThrow();
 });

@@ -8,6 +8,8 @@ The initial supported entry point is the root GitHub Action in `ueokande/kypa`. 
 
 Once a release exists, use its published version tag, such as the illustrative `ueokande/kypa@v1.0.0`, or preferably pin its reviewed full release-commit SHA. Review the release notes and recorded source provenance when selecting a version.
 
+Use distribution tags named `vX.Y.Z`. Tags and GitHub Releases named `source-vX.Y.Z` track source versioning and do not contain the compiled Action; they are not runnable Action references. A source Release can exist before the distribution build finishes.
+
 The development branch (`master`) does not contain compiled Action JavaScript and is not a supported runnable reference. Use the release commit rather than its underlying source commit. Exact version tags remain fixed; a moving `v1` alias is not part of the initial documented contract.
 
 ## Inputs and outputs

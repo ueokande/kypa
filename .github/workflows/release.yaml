@@ -1,13 +1,13 @@
-name: Publish Action release
+name: Release
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [master]
   workflow_dispatch:
     inputs:
-      release-pr:
-        description: Merged Release PR number to retry publication
-        required: true
+      source-tag:
+        description: Existing source-vX.Y.Z tag to retry distribution (leave empty to run release-please)
+        required: false
+        default: ""
         type: string
 permissions:
   contents: read
@@ -15,42 +15,61 @@ concurrency:
   group: kypa-release
   cancel-in-progress: false
 jobs:
+  release-please:
+    if: github.ref == 'refs/heads/master' && inputs['source-tag'] == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      source_tag: ${{ steps.release.outputs.tag_name }}
+      source: ${{ steps.release.outputs.sha }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          target-branch: master
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
   build:
+    needs: release-please
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
-      (github.event.pull_request.merged == true &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.head.ref == 'release-please--branches--master' &&
-       contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
+      !cancelled() && github.ref == 'refs/heads/master' &&
+      ((needs.release-please.result == 'success' && needs.release-please.outputs.created == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs['source-tag'] != ''))
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
       source: ${{ steps.release.outputs.source }}
-      pr: ${{ steps.release.outputs.pr }}
+      source_tag: ${{ steps.release.outputs.source_tag }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.sha }}
+          ref: master
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version
-      - name: Validate merged Release PR
+      - name: Resolve and validate the source release tag
         id: release
         run: node scripts/release-metadata.ts
         env:
-          GH_TOKEN: ${{ github.token }}
+          SOURCE_TAG: ${{ inputs['source-tag'] || needs.release-please.outputs.source_tag }}
+          SOURCE_SHA: ${{ needs.release-please.outputs.source }}
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ steps.release.outputs.source }}
           persist-credentials: false
-      - name: Read released version
+      - name: Validate the released version
         id: version
         run: node scripts/release-version.ts
+        env:
+          SOURCE_TAG: ${{ steps.release.outputs.source_tag }}
       - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -68,15 +87,13 @@ jobs:
           retention-days: 1
   publish-tag:
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write
-      pull-requests: write
-      issues: write
     env:
       RELEASE_VERSION: ${{ needs.build.outputs.version }}
-      RELEASE_PR: ${{ needs.build.outputs.pr }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -92,16 +109,10 @@ jobs:
           path: dist
       - name: Prepare generated commit and annotated tag
         run: node scripts/prepare-release.ts
-      - name: Push only the exact release tag
+      - name: Push only the exact distribution tag
         run: git push origin "refs/tags/$RELEASE_VERSION"
-      - name: Publish GitHub Release
+      - name: Publish distribution GitHub Release
         run: |
           if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
             gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
           fi
-      - name: Mark Release PR as published
-        run: |
-          if ! gh api "repos/$GITHUB_REPOSITORY/labels/autorelease%3A%20tagged" >/dev/null 2>&1; then
-            gh label create 'autorelease: tagged' --color 0e8a16 --description 'Published Action release'
-          fi
-          gh pr edit "$RELEASE_PR" --remove-label 'autorelease: pending' --add-label 'autorelease: tagged'

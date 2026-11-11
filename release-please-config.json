@@ -5,11 +5,12 @@
     ".": {
       "release-type": "node",
       "initial-version": "0.1.0",
-      "include-component-in-tag": false,
+      "include-component-in-tag": true,
       "include-v-in-tag": true,
-      "skip-github-release": true,
       "bump-minor-pre-major": true,
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "component": "source",
+      "tag-separator": "-"
     }
   },
   "separate-pull-requests": false

@@ -6,5 +6,7 @@ const manifest = JSON.parse(
 );
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const version = versionForRelease(pkg.version, manifest['.']);
+if (process.env.SOURCE_TAG !== `source-${version}`)
+  throw new Error('Source tag and checked-out package version must match.');
 if (!process.env.GITHUB_OUTPUT) throw new Error('GITHUB_OUTPUT is required.');
 await appendFile(process.env.GITHUB_OUTPUT, `version=${version}\n`);
