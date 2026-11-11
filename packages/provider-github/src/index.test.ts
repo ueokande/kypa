@@ -53,6 +53,7 @@ test('discovers more than 100 repositories with pagination, union deduplication,
   expect(result.excluded).toEqual(['org/repo-2', 'org/repo-102']);
   expect(request).toHaveBeenCalledTimes(2);
 });
+
 test('explicit targets have the same archive/fork filters; inaccessible targets leave coverage errors', async () => {
   const provider = createGitHubProvider({
     ...settings,
@@ -71,15 +72,20 @@ test('explicit targets have the same archive/fork filters; inaccessible targets 
   expect(result.excluded).toHaveLength(1);
   expect(result.errors).toHaveLength(1);
 });
+
 test('collects default-branch references at a resolved commit, without raw file contents in evidence', async () => {
   const source =
     'jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n';
   const provider = createGitHubProvider({
     ...settings,
     fetch: transport((path) => {
-      if (path === '/repos/org/repo-1') return repository();
-      if (path.includes('/commits/')) return { sha, commit: { tree: { sha } } };
-      if (path.includes('/git/trees/'))
+      if (path === '/repos/org/repo-1') {
+        return repository();
+      }
+      if (path.includes('/commits/')) {
+        return { sha, commit: { tree: { sha } } };
+      }
+      if (path.includes('/git/trees/')) {
         return {
           truncated: false,
           tree: [
@@ -91,12 +97,14 @@ test('collects default-branch references at a resolved commit, without raw file 
             },
           ],
         };
-      if (path.includes('/git/blobs/'))
+      }
+      if (path.includes('/git/blobs/')) {
         return {
           encoding: 'base64',
           content: Buffer.from(source).toString('base64'),
           size: source.length,
         };
+      }
       throw new Error(`Unexpected fixture request: ${path}`);
     }),
   });
@@ -108,7 +116,9 @@ test('collects default-branch references at a resolved commit, without raw file 
     })
   ).resources[0];
   expect(resource).toBeDefined();
-  if (!resource) return;
+  if (!resource) {
+    return;
+  }
   const evidence = await provider.collect(resource, [
     'github/action-references@1',
   ]);
@@ -117,17 +127,22 @@ test('collects default-branch references at a resolved commit, without raw file 
   expect(JSON.stringify(evidence)).not.toContain('steps:');
   expect(JSON.stringify(evidence)).not.toContain('fixture-token');
 });
+
 test.each([false, true])(
   'protection 404 requires established unprotected branch evidence (%s)',
   async (admin) => {
     const provider = createGitHubProvider({
       ...settings,
       fetch: transport((path) => {
-        if (path.includes('/commits/'))
+        if (path.includes('/commits/')) {
           return { sha, commit: { tree: { sha } } };
-        if (path.endsWith('/branches/main')) return { protected: !admin };
-        if (path.includes('/protection'))
+        }
+        if (path.endsWith('/branches/main')) {
+          return { protected: !admin };
+        }
+        if (path.includes('/protection')) {
           return new Response('', { status: 404 });
+        }
         return repository(1, { permissions: { admin } });
       }),
     });
@@ -138,7 +153,9 @@ test.each([false, true])(
         repositories: ['org/repo-1'],
       })
     ).resources[0];
-    if (!resource) throw new Error('Missing fixture resource');
+    if (!resource) {
+      throw new Error('Missing fixture resource');
+    }
     const evidence = await provider.collect(resource, [
       'github/classic-protection@1',
     ]);
@@ -147,12 +164,17 @@ test.each([false, true])(
     );
   },
 );
+
 test('truncated trees cannot become successful empty evaluations', async () => {
   const provider = createGitHubProvider({
     ...settings,
     fetch: transport((path) => {
-      if (path.includes('/commits/')) return { sha, commit: { tree: { sha } } };
-      if (path.includes('/trees/')) return { truncated: true, tree: [] };
+      if (path.includes('/commits/')) {
+        return { sha, commit: { tree: { sha } } };
+      }
+      if (path.includes('/trees/')) {
+        return { truncated: true, tree: [] };
+      }
       return repository();
     }),
   });
@@ -163,7 +185,9 @@ test('truncated trees cannot become successful empty evaluations', async () => {
       repositories: ['org/repo-1'],
     })
   ).resources[0];
-  if (!resource) throw new Error('Missing fixture resource');
+  if (!resource) {
+    throw new Error('Missing fixture resource');
+  }
   expect(
     (await provider.collect(resource, ['github/action-references@1']))[
       'github/action-references@1'
@@ -190,7 +214,9 @@ test('confirmed empty Git repositories are not applicable despite a default bran
       repositories: ['org/repo-1'],
     })
   ).resources[0];
-  if (!resource) throw new Error('Missing fixture resource');
+  if (!resource) {
+    throw new Error('Missing fixture resource');
+  }
   expect(
     (await provider.collect(resource, ['github/action-references@1']))[
       'github/action-references@1'
@@ -205,8 +231,10 @@ test('identical file blobs share one request while preserving separate file loca
   const provider = createGitHubProvider({
     ...settings,
     fetch: transport((path) => {
-      if (path.includes('/commits/')) return { sha, commit: { tree: { sha } } };
-      if (path.includes('/trees/'))
+      if (path.includes('/commits/')) {
+        return { sha, commit: { tree: { sha } } };
+      }
+      if (path.includes('/trees/')) {
         return {
           truncated: false,
           tree: ['one', 'two'].map((name) => ({
@@ -216,6 +244,7 @@ test('identical file blobs share one request while preserving separate file loca
             sha,
           })),
         };
+      }
       if (path.includes('/blobs/')) {
         requests++;
         return {
@@ -234,14 +263,17 @@ test('identical file blobs share one request while preserving separate file loca
       repositories: ['org/repo-1'],
     })
   ).resources[0];
-  if (!resource) throw new Error('Missing fixture resource');
+  if (!resource) {
+    throw new Error('Missing fixture resource');
+  }
   const evidence = (
     await provider.collect(resource, ['github/action-references@1'])
   )['github/action-references@1'];
   expect(evidence?.state).toBe('available');
   expect(requests).toBe(1);
-  if (evidence?.state === 'available')
+  if (evidence?.state === 'available') {
     expect(
       (evidence.data as { references: unknown[] }).references,
     ).toHaveLength(2);
+  }
 });

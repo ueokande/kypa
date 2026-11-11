@@ -25,6 +25,7 @@ test('collects step and reusable workflow references with commit-pinned location
     `/blob/${'a'.repeat(40)}/.github/workflows/ci.yml#L7`,
   );
 });
+
 test('collects composite references but not JavaScript Action manifests', () => {
   expect(
     collectReferences(
@@ -43,6 +44,7 @@ test('collects composite references but not JavaScript Action manifests', () => 
     ),
   ).toEqual([]);
 });
+
 test.each([
   'jobs: [',
   'jobs:\n  a:\n    uses: nope\n',

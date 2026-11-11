@@ -22,6 +22,7 @@ const report = {
   findings: [],
   errors: [{ message: '<script>alert(1)</script>' }],
 } as unknown as Report;
+
 test.each(['/', '/monitor/'])(
   'reporters write portable HTML at %s without inline untrusted data',
   async (basePath) => {

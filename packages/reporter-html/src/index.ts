@@ -11,8 +11,9 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
         !options.directory ||
         !options.basePath ||
         !/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(options.basePath)
-      )
+      ) {
         throw new Error('Invalid HTML output options.');
+      }
       const destination = path.resolve(
         context.policyDirectory,
         options.directory,
@@ -43,7 +44,9 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
           await fsPromises.lstat(destination);
           throw new Error('Output already exists.');
         } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            throw error;
+          }
         }
         await fsPromises.rename(stage, destination);
       } finally {

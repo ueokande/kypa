@@ -24,7 +24,9 @@ function select(label: string, values: string[]): HTMLSelectElement {
 }
 
 export function renderReport(report: Report): void {
-  if (report.schemaVersion !== 1) throw new Error('Unsupported report format.');
+  if (report.schemaVersion !== 1) {
+    throw new Error('Unsupported report format.');
+  }
   const main = element('main');
   document.body.replaceChildren(main);
   main.append(
@@ -59,23 +61,25 @@ export function renderReport(report: Report): void {
       'Discovery is limited to accessible repositories. API settings and file evidence are not an atomic snapshot.',
     ),
   );
-  if (report.run.status === 'partial')
+  if (report.run.status === 'partial') {
     main.append(
       element(
         'strong',
         'Missing coverage: this report cannot establish compliance for all intended targets.',
       ),
     );
+  }
   if (report.errors.length) {
     const errors = element('section');
     errors.append(element('h2', 'Coverage errors'));
-    for (const error of report.errors)
+    for (const error of report.errors) {
       errors.append(
         element(
           'p',
           `${error.phase}: ${error.resource ?? 'discovery'} ${error.rule ?? ''} — ${error.message}`,
         ),
       );
+    }
     main.append(errors);
   }
   const filters = element('section');
@@ -136,7 +140,9 @@ export function renderReport(report: Report): void {
       );
       for (const id of evaluation.findingIds) {
         const finding = findings.get(id);
-        if (!finding) continue;
+        if (!finding) {
+          continue;
+        }
         card.append(
           element('p', finding.message),
           element('p', finding.remediation),
@@ -157,15 +163,18 @@ export function renderReport(report: Report): void {
     }
   };
 
-  for (const control of [search, resource, rule, severity])
+  for (const control of [search, resource, rule, severity]) {
     control.addEventListener('input', update);
+  }
   update();
 }
 
 if (typeof document !== 'undefined') {
   fetch(new URL('data.json', document.baseURI))
     .then((response) => {
-      if (!response.ok) throw new Error('Report unavailable.');
+      if (!response.ok) {
+        throw new Error('Report unavailable.');
+      }
       return response.json() as Promise<Report>;
     })
     .then(renderReport)

@@ -7,6 +7,7 @@ const settings = {
   retries: 2,
   requestTimeoutSeconds: 30,
 };
+
 test('honors Retry-After and never includes credentials in the URL', async () => {
   const transport = vi
     .fn<typeof fetch>()
@@ -23,6 +24,7 @@ test('honors Retry-After and never includes credentials in the URL', async () =>
   expect(sleep).toHaveBeenCalledWith(2000, undefined);
   expect(transport.mock.calls[0]?.[0]).toBe('https://api.github.com/user');
 });
+
 test('401 is fatal; 404 is not retried and cannot expose response text', async () => {
   const unauthorized = new GitHubClient({
     ...settings,
@@ -39,6 +41,7 @@ test('401 is fatal; 404 is not retried and cannot expose response text', async (
   ).rejects.toThrow('GitHub request failed');
   expect(transport).toHaveBeenCalledTimes(1);
 });
+
 test('bounds retries, cancellation, and excessively long server delays', async () => {
   const transport = vi
     .fn<typeof fetch>()
@@ -62,6 +65,7 @@ test('bounds retries, cancellation, and excessively long server delays', async (
     }).get('/x'),
   ).rejects.toThrow();
 });
+
 test('request concurrency stays within the configured limit', async () => {
   let active = 0;
   let maximum = 0;

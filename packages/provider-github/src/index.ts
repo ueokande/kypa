@@ -40,8 +40,9 @@ const treeSchema = z.object({
 });
 
 export function createGitHubProvider(options: ClientOptions): Provider {
-  if (!options.token.trim())
+  if (!options.token.trim()) {
     throw new FatalError('AUTHENTICATION', 'A collection token is required.');
+  }
   const api = new GitHubClient(options);
 
   const now = () => new Date((options.now ?? Date.now)()).toISOString();
@@ -56,7 +57,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       const add = (data: unknown) => {
         const repo = repoSchema.parse(data);
         const name = repo.full_name.toLowerCase();
-        if (seen.has(name)) return;
+        if (seen.has(name)) {
+          return;
+        }
         seen.add(name);
         if (
           (!targets.includeArchived && repo.archived) ||
@@ -95,10 +98,14 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 ),
               );
             repos.forEach(add);
-            if (repos.length < 100) break;
+            if (repos.length < 100) {
+              break;
+            }
           }
         } catch (error) {
-          if (error instanceof FatalError || signal?.aborted) throw error;
+          if (error instanceof FatalError || signal?.aborted) {
+            throw error;
+          }
           result.errors.push({
             phase: 'discovery',
             code: 'DISCOVERY',
@@ -108,7 +115,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         }
       }
       for (const name of targets.repositories) {
-        if (seen.has(name.toLowerCase())) continue;
+        if (seen.has(name.toLowerCase())) {
+          continue;
+        }
         // Exact exclusions can be applied before requesting inaccessible targets.
         if (targets.exclude.some((pattern) => matchesPattern(name, pattern))) {
           result.excluded.push(name);
@@ -122,7 +131,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             ),
           );
         } catch (error) {
-          if (error instanceof FatalError || signal?.aborted) throw error;
+          if (error instanceof FatalError || signal?.aborted) {
+            throw error;
+          }
           result.errors.push({
             phase: 'discovery',
             code: 'REPOSITORY_ACCESS',
@@ -146,7 +157,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       let commit: z.infer<typeof commitSchema> | undefined;
 
       const unavailable = (id: string, error: unknown) => {
-        if (error instanceof FatalError || signal?.aborted) throw error;
+        if (error instanceof FatalError || signal?.aborted) {
+          throw error;
+        }
         result[id] = {
           state: 'unavailable',
           observedAt: now(),
@@ -159,8 +172,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       };
 
       if (!branch) {
-        for (const id of ids)
+        for (const id of ids) {
           result[id] = { state: 'not-applicable', observedAt: now() };
+        }
         return result;
       }
       try {
@@ -173,11 +187,14 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         resource.metadata.scannedCommit = commit.sha;
       } catch (error) {
         if (error instanceof ApiError && error.code === 'EMPTY_REPOSITORY') {
-          for (const id of ids)
+          for (const id of ids) {
             result[id] = { state: 'not-applicable', observedAt: now() };
+          }
           return result;
         }
-        for (const id of ids) unavailable(id, error);
+        for (const id of ids) {
+          unavailable(id, error);
+        }
         return result;
       }
       for (const id of ids) {
@@ -189,7 +206,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 signal,
               ),
             );
-            if (tree.truncated) throw new Error('Truncated tree.');
+            if (tree.truncated) {
+              throw new Error('Truncated tree.');
+            }
             const candidates = tree.tree.filter(
               (entry) =>
                 /^[.]github\/workflows\/[^/]+[.]ya?ml$/.test(entry.path) ||
@@ -201,8 +220,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 if (
                   entry.type !== 'blob' ||
                   !['100644', '100755'].includes(entry.mode)
-                )
+                ) {
                   throw new Error('Unsupported file mode.');
+                }
                 const blob = z
                   .object({
                     encoding: z.literal('base64'),
@@ -231,7 +251,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
               }),
             );
             const successful = references.flatMap((item) => {
-              if (item.status === 'rejected') throw item.reason;
+              if (item.status === 'rejected') {
+                throw item.reason;
+              }
               return item.value;
             });
             result[id] = {
@@ -268,8 +290,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 },
               };
             } catch (error) {
-              if (!(error instanceof ApiError) || error.status !== 404)
+              if (!(error instanceof ApiError) || error.status !== 404) {
                 throw error;
+              }
               // A readable branch with protected=false establishes absence. Account privileges alone do not prove token permissions.
               const branchState = z
                 .object({ protected: z.boolean() })
@@ -279,14 +302,18 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                     signal,
                   ),
                 );
-              if (branchState.protected) throw error;
+              if (branchState.protected) {
+                throw error;
+              }
               result[id] = {
                 state: 'available',
                 observedAt: now(),
                 data: { minimum: 0 },
               };
             }
-          } else throw new Error('Unknown evidence ID.');
+          } else {
+            throw new Error('Unknown evidence ID.');
+          }
         } catch (error) {
           unavailable(id, error);
         }

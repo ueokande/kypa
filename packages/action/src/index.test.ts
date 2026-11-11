@@ -31,6 +31,7 @@ const load = vi.fn(async () => ({
   directory: '/tmp',
   digest: 'digest',
 }));
+
 test.each(['never', 'violation', 'error'])(
   'Action maps report outcomes for fail-on %s',
   async (failOn) => {
@@ -45,6 +46,7 @@ test.each(['never', 'violation', 'error'])(
     expect(core.setFailed).toHaveBeenCalledTimes(failOn === 'never' ? 0 : 1);
   },
 );
+
 test('fatal failure is redacted, emits no report outputs, and never gets masked by never', async () => {
   const core = toolkit();
   await run(core, {
@@ -59,6 +61,7 @@ test('fatal failure is redacted, emits no report outputs, and never gets masked 
     'secret payload',
   );
 });
+
 test('invalid input and unusable authentication fail before collection', async () => {
   const core = toolkit('unknown');
   const scan = vi.fn(async () => report);

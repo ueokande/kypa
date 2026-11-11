@@ -22,9 +22,12 @@ export const fullSha: Rule = {
 
   evaluate(_resource, evidence) {
     const item = evidence['github/action-references@1'];
-    if (item?.state === 'not-applicable')
+    if (item?.state === 'not-applicable') {
       return { applicable: false, findings: [] };
-    if (item?.state !== 'available') throw new Error('Unavailable evidence.');
+    }
+    if (item?.state !== 'available') {
+      throw new Error('Unavailable evidence.');
+    }
     const data = actionReferences.parse(item.data);
     return {
       applicable: data.references.length > 0,
@@ -55,9 +58,12 @@ export const requiredReviews: Rule = {
 
   evaluate(_resource, evidence, input) {
     const item: Evidence | undefined = evidence['github/classic-protection@1'];
-    if (item?.state === 'not-applicable')
+    if (item?.state === 'not-applicable') {
       return { applicable: false, findings: [] };
-    if (item?.state !== 'available') throw new Error('Unavailable evidence.');
+    }
+    if (item?.state !== 'available') {
+      throw new Error('Unavailable evidence.');
+    }
     const actual = protection.parse(item.data);
     const parameters = z.object({ minimum: z.number() }).parse(input);
     return {

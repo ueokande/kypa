@@ -33,6 +33,7 @@ afterEach(async () => {
       ),
   );
 });
+
 test('defaults collection controls and rule settings', () => {
   const policy = parsePolicy(source, [rule]);
   expect(policy.scan).toEqual({
@@ -43,6 +44,7 @@ test('defaults collection controls and rule settings', () => {
   expect(policy.rules[0]?.severity).toBe('high');
   expect(policy.targets.includeArchived).toBe(false);
 });
+
 test.each([
   source.replace('version: 1', 'version: 1\nversion: 1'),
   `${source}exceptions: []\n`,
@@ -57,11 +59,13 @@ test.each([
 ])('rejects unknown and duplicate keys and invalid policy', (text) => {
   expect(() => parsePolicy(text, [rule])).toThrow();
 });
+
 test('patterns are case-insensitive, escape dots, and cannot cross owner boundaries', () => {
   expect(matchesPattern('Org/service.api', 'org/service.*')).toBe(true);
   expect(matchesPattern('org/serviceXapi', 'org/service.api')).toBe(false);
   expect(matchesPattern('org/nested/name', 'org/*')).toBe(false);
 });
+
 test('rejects overlapping, existing, escaping, and symlink output destinations', async () => {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), 'kypa-config-'),

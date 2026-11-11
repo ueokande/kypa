@@ -38,9 +38,11 @@ test('full-SHA violations are independent of target suppression comments', () =>
   expect(result.findings).toHaveLength(1);
   expect(result.findings[0]?.location?.line).toBe(1);
 });
+
 test('no remote references is not applicable', () => {
   expect(fullSha.evaluate(resource, references([]), {}).applicable).toBe(false);
 });
+
 test('malformed or unavailable evidence cannot pass', () => {
   expect(() =>
     fullSha.evaluate(
@@ -51,6 +53,7 @@ test('malformed or unavailable evidence cannot pass', () => {
   ).toThrow();
   expect(() => fullSha.evaluate(resource, {}, {})).toThrow();
 });
+
 test.each([0, 1, 2, 6])(
   'required reviews evaluates established minimum %i',
   (minimum) => {
@@ -62,6 +65,7 @@ test.each([0, 1, 2, 6])(
     expect(result.findings.length).toBe(minimum < 2 ? 1 : 0);
   },
 );
+
 test('empty repository is not applicable, invalid limits are rejected', () => {
   expect(
     requiredReviews.evaluate(
@@ -76,6 +80,7 @@ test('empty repository is not applicable, invalid limits are rejected', () => {
     ).applicable,
   ).toBe(false);
   expect(requiredReviews.validateParameters({})).toEqual({ minimum: 1 });
-  for (const minimum of [0, 7, 1.5, '2'])
+  for (const minimum of [0, 7, 1.5, '2']) {
     expect(() => requiredReviews.validateParameters({ minimum })).toThrow();
+  }
 });

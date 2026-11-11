@@ -72,40 +72,46 @@ const rawPolicy = z
 
 export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
   const doc = parseDocument(text, { uniqueKeys: true });
-  if (doc.errors.length)
+  if (doc.errors.length) {
     throw new FatalError(
       'CONFIG',
       'Policy YAML is invalid or contains duplicate keys.',
     );
+  }
   const parsed = rawPolicy.safeParse(doc.toJS({ maxAliasCount: 50 }));
-  if (!parsed.success)
+  if (!parsed.success) {
     throw new FatalError(
       'CONFIG',
       'Policy fields are invalid; check the configuration reference.',
     );
+  }
   const registry = new Map(rules.map((rule) => [rule.id, rule]));
-  if (registry.size !== rules.length)
+  if (registry.size !== rules.length) {
     throw new FatalError('REGISTRY', 'Duplicate rule IDs.');
+  }
   const selected: Policy['rules'] = [];
   for (const [id, setting] of Object.entries(parsed.data.rules)) {
     const rule = registry.get(id);
-    if (!rule)
+    if (!rule) {
       throw new FatalError('CONFIG', 'Policy selects an unknown rule.');
+    }
     let parameters: unknown;
     try {
       parameters = rule.validateParameters(setting.parameters ?? {});
     } catch {
       throw new FatalError('CONFIG', 'Rule parameters are invalid.');
     }
-    if (setting.enabled)
+    if (setting.enabled) {
       selected.push({
         id,
         severity: setting.severity ?? rule.defaultSeverity,
         parameters,
       });
+    }
   }
-  if (!selected.length)
+  if (!selected.length) {
     throw new FatalError('CONFIG', 'At least one enabled rule is required.');
+  }
   return { ...parsed.data, rules: selected };
 }
 
@@ -129,9 +135,13 @@ async function canonical(localPath: string): Promise<string> {
   try {
     return await fsPromises.realpath(localPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
     const parent = path.dirname(localPath);
-    if (parent === localPath) return localPath;
+    if (parent === localPath) {
+      return localPath;
+    }
     return path.resolve(
       await canonical(parent),
       path.relative(parent, localPath),
@@ -165,9 +175,11 @@ export async function loadPolicy(
         'Outputs must be dedicated paths beneath the policy directory.',
       );
     }
-    for (const other of destinations)
-      if (within(other, destination) || within(destination, other))
+    for (const other of destinations) {
+      if (within(other, destination) || within(destination, other)) {
         throw new FatalError('OUTPUT_PATH', 'Reporter destinations overlap.');
+      }
+    }
     try {
       await fsPromises.lstat(destination);
       throw new FatalError(
@@ -175,7 +187,9 @@ export async function loadPolicy(
         'Output destination already exists; use a fresh generated destination.',
       );
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
     }
     destinations.push(destination);
   }

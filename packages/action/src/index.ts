@@ -60,12 +60,14 @@ export async function run(
 ): Promise<void> {
   try {
     const token = toolkit.getInput('token', { required: true });
-    if (!token.trim())
+    if (!token.trim()) {
       throw new FatalError('AUTHENTICATION', 'A collection token is required.');
+    }
     toolkit.setSecret(token);
     const failOn = toolkit.getInput('fail-on') || 'never';
-    if (failOn !== 'never' && failOn !== 'violation' && failOn !== 'error')
+    if (failOn !== 'never' && failOn !== 'violation' && failOn !== 'error') {
       throw new FatalError('INPUT', 'Invalid fail-on input.');
+    }
     const loaded = await dependencies.load(
       toolkit.getInput('config') || 'kypa.yaml',
       builtInRules,
@@ -85,10 +87,11 @@ export async function run(
       `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}\n`,
     );
     await toolkit.summary.write();
-    if (shouldFail(report, failOn))
+    if (shouldFail(report, failOn)) {
       toolkit.setFailed(
         'The generated scan report triggered the selected failure policy.',
       );
+    }
   } catch (error) {
     // Never forward arbitrary exception messages, API bodies, or policy contents to workflow logs.
     toolkit.setFailed(

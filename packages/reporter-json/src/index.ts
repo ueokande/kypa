@@ -5,7 +5,9 @@ export const jsonReporter: Reporter = {
   id: 'json',
 
   async write(report, options, context) {
-    if (!options.path) throw new Error('Missing JSON output path.');
+    if (!options.path) {
+      throw new Error('Missing JSON output path.');
+    }
     context.signal?.throwIfAborted();
     const destination = path.resolve(context.policyDirectory, options.path);
     await fsPromises.mkdir(path.dirname(destination), { recursive: true });

@@ -36,25 +36,33 @@ export class GitHubClient {
 
       const abort = () => {
         const index = this.waiters.indexOf(start);
-        if (index !== -1) this.waiters.splice(index, 1);
+        if (index !== -1) {
+          this.waiters.splice(index, 1);
+        }
         reject(signal?.reason ?? new Error('Request cancelled.'));
       };
 
       this.waiters.push(start);
       signal?.addEventListener('abort', abort, { once: true });
-      if (signal?.aborted) abort();
+      if (signal?.aborted) {
+        abort();
+      }
     });
   }
 
   private release(): void {
     const next = this.waiters.shift();
-    if (next) next();
-    else this.active--;
+    if (next) {
+      next();
+    } else {
+      this.active--;
+    }
   }
 
   async get(path: string, signal?: AbortSignal): Promise<unknown> {
-    if (!path.startsWith('/') || path.startsWith('//'))
+    if (!path.startsWith('/') || path.startsWith('//')) {
       throw new Error('Invalid API path.');
+    }
     for (let attempt = 0; ; attempt++) {
       signal?.throwIfAborted();
       await this.acquire(signal);
@@ -76,16 +84,23 @@ export class GitHubClient {
             redirect: 'error',
           },
         );
-        if (response.status === 401)
+        if (response.status === 401) {
           throw new FatalError(
             'AUTHENTICATION',
             'GitHub authentication is unusable.',
           );
+        }
         body = await response.text();
       } catch (error) {
-        if (error instanceof FatalError) throw error;
-        if (signal?.aborted) signal.throwIfAborted();
-        if (attempt >= this.options.retries) throw new ApiError(0, 'NETWORK');
+        if (error instanceof FatalError) {
+          throw error;
+        }
+        if (signal?.aborted) {
+          signal.throwIfAborted();
+        }
+        if (attempt >= this.options.retries) {
+          throw new ApiError(0, 'NETWORK');
+        }
         await this.pause(1000 * 2 ** attempt, signal);
         continue;
       } finally {
@@ -107,10 +122,13 @@ export class GitHubClient {
             typeof data === 'object' &&
             'message' in data &&
             data.message === 'Git Repository is empty.'
-          )
+          ) {
             throw new ApiError(409, 'EMPTY_REPOSITORY');
+          }
         } catch (error) {
-          if (error instanceof ApiError) throw error;
+          if (error instanceof ApiError) {
+            throw error;
+          }
         }
       }
       const limited =
@@ -134,8 +152,9 @@ export class GitHubClient {
             : limited && reset > now
               ? reset - now
               : 1000 * 2 ** attempt;
-        if (!Number.isFinite(delay) || delay > 300_000)
+        if (!Number.isFinite(delay) || delay > 300_000) {
           throw new ApiError(response.status, 'RATE_LIMIT');
+        }
         await this.pause(Math.max(0, delay), signal);
         continue;
       }
@@ -147,7 +166,9 @@ export class GitHubClient {
     milliseconds: number,
     signal?: AbortSignal,
   ): Promise<void> {
-    if (this.options.sleep) return this.options.sleep(milliseconds, signal);
+    if (this.options.sleep) {
+      return this.options.sleep(milliseconds, signal);
+    }
     await timersPromises.setTimeout(
       milliseconds,
       undefined,

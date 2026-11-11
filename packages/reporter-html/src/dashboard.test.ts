@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { renderReport } from './dashboard.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
 test('renders partial coverage, escapes untrusted values, and filters evaluations', () => {
   const dom = new JSDOM('<!doctype html><body></body>', {
     url: 'https://example.org/monitor/',
@@ -75,7 +76,9 @@ test('renders partial coverage, escapes untrusted values, and filters evaluation
   expect(document.querySelectorAll('script,img')).toHaveLength(0);
   expect(document.querySelector('a')?.hasAttribute('href')).toBe(false);
   const search = document.querySelector('input');
-  if (!search) throw new Error('Search missing');
+  if (!search) {
+    throw new Error('Search missing');
+  }
   search.value = 'absent';
   search.dispatchEvent(new dom.window.Event('input'));
   expect(document.querySelectorAll('article')).toHaveLength(0);

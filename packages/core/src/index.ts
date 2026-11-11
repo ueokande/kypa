@@ -34,22 +34,28 @@ export async function runScan(
   if (
     ruleMap.size !== dependencies.rules.length ||
     reporterMap.size !== dependencies.reporters.length
-  )
+  ) {
     throw new FatalError('REGISTRY', 'Duplicate component IDs.');
-  for (const rule of policy.rules)
-    if (!ruleMap.has(rule.id))
+  }
+  for (const rule of policy.rules) {
+    if (!ruleMap.has(rule.id)) {
       throw new FatalError('REGISTRY', 'Unknown rule.');
-  for (const reporter of policy.reporters)
-    if (!reporterMap.has(reporter.name))
+    }
+  }
+  for (const reporter of policy.reporters) {
+    if (!reporterMap.has(reporter.name)) {
       throw new FatalError('REGISTRY', 'Unknown reporter.');
+    }
+  }
   const startedAt = now().toISOString();
   dependencies.signal?.throwIfAborted();
   const discovery = await dependencies.provider.discover(
     policy.targets,
     dependencies.signal,
   );
-  if (!discovery.resources.length && !discovery.errors.length)
+  if (!discovery.resources.length && !discovery.errors.length) {
     throw new FatalError('EMPTY_TARGETS', 'No effective targets remain.');
+  }
   const report: Report = {
     schemaVersion: 1,
     run: {
@@ -97,8 +103,9 @@ export async function runScan(
         dependencies.signal,
       );
     } catch (error) {
-      if (error instanceof FatalError || dependencies.signal?.aborted)
+      if (error instanceof FatalError || dependencies.signal?.aborted) {
         throw error;
+      }
       evidence = Object.fromEntries(
         ids.map((id) => [
           id,
@@ -114,7 +121,9 @@ export async function runScan(
     const key = resourceKey(resource);
     for (const selected of policy.rules) {
       const rule = ruleMap.get(selected.id);
-      if (!rule) throw new FatalError('REGISTRY', 'Unknown rule.');
+      if (!rule) {
+        throw new FatalError('REGISTRY', 'Unknown rule.');
+      }
       const evaluation: Report['evaluations'][number] = {
         resource: key,
         rule: rule.id,
@@ -130,7 +139,9 @@ export async function runScan(
         }),
       };
       report.evaluations.push(evaluation);
-      if (!applicable.includes(selected)) continue;
+      if (!applicable.includes(selected)) {
+        continue;
+      }
       const unavailable = rule.requiredEvidence.find(
         (id) => !evidence[id] || evidence[id]?.state === 'unavailable',
       );
