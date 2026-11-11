@@ -14,5 +14,5 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["packages/**/*.ts", "rslib.config.ts", "scripts/**/*.ts"]
+  "include": ["packages/**/*.ts", "rslib.config.ts", "tests/**/*.ts"]
 }

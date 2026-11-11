@@ -5,7 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as url from "node:url";
 
-const root = url.fileURLToPath(new URL("../", import.meta.url));
+const root = url.fileURLToPath(new URL("../../", import.meta.url));
 for (const scenario of ["report", "violation", "fatal"]) {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "kypa-action-smoke-"),
@@ -35,7 +35,7 @@ reporters:
       process.execPath,
       [
         "--import",
-        path.join(root, "scripts/fixtures/github.ts"),
+        url.fileURLToPath(new URL("./fixtures/github.ts", import.meta.url)),
         path.join(root, "dist/action/index.js"),
       ],
       {
