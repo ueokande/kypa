@@ -1,21 +1,21 @@
-import * as fsPromises from 'node:fs/promises';
-import * as path from 'node:path';
-import type { Reporter } from '@kypa/sdk';
+import * as fsPromises from "node:fs/promises";
+import * as path from "node:path";
+import type { Reporter } from "@kypa/sdk";
 export const jsonReporter: Reporter = {
-  id: 'json',
+  id: "json",
 
   async write(report, options, context) {
     if (!options.path) {
-      throw new Error('Missing JSON output path.');
+      throw new Error("Missing JSON output path.");
     }
     context.signal?.throwIfAborted();
     const destination = path.resolve(context.policyDirectory, options.path);
     await fsPromises.mkdir(path.dirname(destination), { recursive: true });
     const stage = await fsPromises.mkdtemp(
-      path.join(path.dirname(destination), '.kypa-json-'),
+      path.join(path.dirname(destination), ".kypa-json-"),
     );
     try {
-      const file = path.join(stage, 'report.json');
+      const file = path.join(stage, "report.json");
       await fsPromises.writeFile(
         file,
         `${JSON.stringify(report, null, 2)}

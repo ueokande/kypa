@@ -1,5 +1,5 @@
-import * as timersPromises from 'node:timers/promises';
-import { FatalError, type ScanSettings } from '@kypa/sdk';
+import * as timersPromises from "node:timers/promises";
+import { FatalError, type ScanSettings } from "@kypa/sdk";
 
 export class ApiError extends Error {
   constructor(
@@ -30,7 +30,7 @@ export class GitHubClient {
     }
     await new Promise<void>((resolve, reject) => {
       const start = () => {
-        signal?.removeEventListener('abort', abort);
+        signal?.removeEventListener("abort", abort);
         resolve();
       };
 
@@ -39,11 +39,11 @@ export class GitHubClient {
         if (index !== -1) {
           this.waiters.splice(index, 1);
         }
-        reject(signal?.reason ?? new Error('Request cancelled.'));
+        reject(signal?.reason ?? new Error("Request cancelled."));
       };
 
       this.waiters.push(start);
-      signal?.addEventListener('abort', abort, { once: true });
+      signal?.addEventListener("abort", abort, { once: true });
       if (signal?.aborted) {
         abort();
       }
@@ -60,8 +60,8 @@ export class GitHubClient {
   }
 
   async get(path: string, signal?: AbortSignal): Promise<unknown> {
-    if (!path.startsWith('/') || path.startsWith('//')) {
-      throw new Error('Invalid API path.');
+    if (!path.startsWith("/") || path.startsWith("//")) {
+      throw new Error("Invalid API path.");
     }
     for (let attempt = 0; ; attempt++) {
       signal?.throwIfAborted();
@@ -77,17 +77,17 @@ export class GitHubClient {
           {
             headers: {
               Authorization: `Bearer ${this.options.token}`,
-              Accept: 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
             },
             signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-            redirect: 'error',
+            redirect: "error",
           },
         );
         if (response.status === 401) {
           throw new FatalError(
-            'AUTHENTICATION',
-            'GitHub authentication is unusable.',
+            "AUTHENTICATION",
+            "GitHub authentication is unusable.",
           );
         }
         body = await response.text();
@@ -99,7 +99,7 @@ export class GitHubClient {
           signal.throwIfAborted();
         }
         if (attempt >= this.options.retries) {
-          throw new ApiError(0, 'NETWORK');
+          throw new ApiError(0, "NETWORK");
         }
         await this.pause(1000 * 2 ** attempt, signal);
         continue;
@@ -110,7 +110,7 @@ export class GitHubClient {
         try {
           return JSON.parse(body);
         } catch {
-          throw new ApiError(response.status, 'INVALID_RESPONSE');
+          throw new ApiError(response.status, "INVALID_RESPONSE");
         }
       }
       // Interpret only known status details; never expose raw response bodies.
@@ -119,11 +119,11 @@ export class GitHubClient {
           const data: unknown = JSON.parse(body);
           if (
             data &&
-            typeof data === 'object' &&
-            'message' in data &&
-            data.message === 'Git Repository is empty.'
+            typeof data === "object" &&
+            "message" in data &&
+            data.message === "Git Repository is empty."
           ) {
-            throw new ApiError(409, 'EMPTY_REPOSITORY');
+            throw new ApiError(409, "EMPTY_REPOSITORY");
           }
         } catch (error) {
           if (error instanceof ApiError) {
@@ -134,16 +134,16 @@ export class GitHubClient {
       const limited =
         response.status === 429 ||
         (response.status === 403 &&
-          (response.headers.has('retry-after') ||
-            response.headers.get('x-ratelimit-remaining') === '0'));
+          (response.headers.has("retry-after") ||
+            response.headers.get("x-ratelimit-remaining") === "0"));
       if (
         (limited || response.status >= 500) &&
         attempt < this.options.retries
       ) {
         const now = (this.options.now ?? Date.now)();
-        const retry = response.headers.get('retry-after');
+        const retry = response.headers.get("retry-after");
         const seconds = retry === null ? Number.NaN : Number(retry);
-        const reset = Number(response.headers.get('x-ratelimit-reset')) * 1000;
+        const reset = Number(response.headers.get("x-ratelimit-reset")) * 1000;
         const delay =
           retry !== null
             ? Number.isFinite(seconds)
@@ -153,12 +153,12 @@ export class GitHubClient {
               ? reset - now
               : 1000 * 2 ** attempt;
         if (!Number.isFinite(delay) || delay > 300_000) {
-          throw new ApiError(response.status, 'RATE_LIMIT');
+          throw new ApiError(response.status, "RATE_LIMIT");
         }
         await this.pause(Math.max(0, delay), signal);
         continue;
       }
-      throw new ApiError(response.status, limited ? 'RATE_LIMIT' : 'HTTP');
+      throw new ApiError(response.status, limited ? "RATE_LIMIT" : "HTTP");
     }
   }
 

@@ -1,4 +1,4 @@
-import { matchesPattern } from '@kypa/core';
+import { matchesPattern } from "@kypa/core";
 import {
   type Discovery,
   type Evidence,
@@ -6,12 +6,12 @@ import {
   type Provider,
   type Resource,
   type TargetConfig,
-} from '@kypa/sdk';
-import { z } from 'zod';
-import { ApiError, type ClientOptions, GitHubClient } from './client.js';
-import { collectReferences } from './references.js';
+} from "@kypa/sdk";
+import { z } from "zod";
+import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
+import { collectReferences } from "./references.js";
 
-export { ApiError, GitHubClient } from './client.js';
+export { ApiError, GitHubClient } from "./client.js";
 
 const repoSchema = z.object({
   id: z.number().int(),
@@ -41,14 +41,14 @@ const treeSchema = z.object({
 
 export function createGitHubProvider(options: ClientOptions): Provider {
   if (!options.token.trim()) {
-    throw new FatalError('AUTHENTICATION', 'A collection token is required.');
+    throw new FatalError("AUTHENTICATION", "A collection token is required.");
   }
   const api = new GitHubClient(options);
 
   const now = () => new Date((options.now ?? Date.now)()).toISOString();
 
   return {
-    id: 'github',
+    id: "github",
 
     async discover(targets: TargetConfig, signal): Promise<Discovery> {
       const result: Discovery = { resources: [], errors: [], excluded: [] };
@@ -70,8 +70,8 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           return;
         }
         result.resources.push({
-          provider: 'github',
-          type: 'repository',
+          provider: "github",
+          type: "repository",
           id: String(repo.id),
           name: repo.full_name,
           url: `https://github.com/${repo.full_name}`,
@@ -107,9 +107,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             throw error;
           }
           result.errors.push({
-            phase: 'discovery',
-            code: 'DISCOVERY',
-            message: 'Organization repository discovery could not complete.',
+            phase: "discovery",
+            code: "DISCOVERY",
+            message: "Organization repository discovery could not complete.",
             resource: `github/organization/${org}`,
           });
         }
@@ -126,7 +126,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         try {
           add(
             await api.get(
-              `/repos/${name.split('/').map(encodeURIComponent).join('/')}`,
+              `/repos/${name.split("/").map(encodeURIComponent).join("/")}`,
               signal,
             ),
           );
@@ -135,9 +135,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             throw error;
           }
           result.errors.push({
-            phase: 'discovery',
-            code: 'REPOSITORY_ACCESS',
-            message: 'An explicit repository could not be accessed.',
+            phase: "discovery",
+            code: "REPOSITORY_ACCESS",
+            message: "An explicit repository could not be accessed.",
             resource: `github/repository/${name}`,
           });
         }
@@ -152,7 +152,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       signal,
     ): Promise<Record<string, Evidence>> {
       const result: Record<string, Evidence> = {};
-      const base = `/repos/${resource.name.split('/').map(encodeURIComponent).join('/')}`;
+      const base = `/repos/${resource.name.split("/").map(encodeURIComponent).join("/")}`;
       const branch = resource.metadata.defaultBranch;
       let commit: z.infer<typeof commitSchema> | undefined;
 
@@ -161,19 +161,19 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           throw error;
         }
         result[id] = {
-          state: 'unavailable',
+          state: "unavailable",
           observedAt: now(),
           code:
             error instanceof ApiError
               ? `GITHUB_${error.status}_${error.code}`
-              : 'INVALID_EVIDENCE',
-          message: 'Required GitHub evidence could not be collected or parsed.',
+              : "INVALID_EVIDENCE",
+          message: "Required GitHub evidence could not be collected or parsed.",
         };
       };
 
       if (!branch) {
         for (const id of ids) {
-          result[id] = { state: 'not-applicable', observedAt: now() };
+          result[id] = { state: "not-applicable", observedAt: now() };
         }
         return result;
       }
@@ -186,9 +186,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         );
         resource.metadata.scannedCommit = commit.sha;
       } catch (error) {
-        if (error instanceof ApiError && error.code === 'EMPTY_REPOSITORY') {
+        if (error instanceof ApiError && error.code === "EMPTY_REPOSITORY") {
           for (const id of ids) {
-            result[id] = { state: 'not-applicable', observedAt: now() };
+            result[id] = { state: "not-applicable", observedAt: now() };
           }
           return result;
         }
@@ -199,7 +199,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       }
       for (const id of ids) {
         try {
-          if (id === 'github/action-references@1') {
+          if (id === "github/action-references@1") {
             const tree = treeSchema.parse(
               await api.get(
                 `${base}/git/trees/${commit.commit.tree.sha}?recursive=1`,
@@ -207,7 +207,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
               ),
             );
             if (tree.truncated) {
-              throw new Error('Truncated tree.');
+              throw new Error("Truncated tree.");
             }
             const candidates = tree.tree.filter(
               (entry) =>
@@ -218,14 +218,14 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             const references = await Promise.allSettled(
               candidates.map(async (entry) => {
                 if (
-                  entry.type !== 'blob' ||
-                  !['100644', '100755'].includes(entry.mode)
+                  entry.type !== "blob" ||
+                  !["100644", "100755"].includes(entry.mode)
                 ) {
-                  throw new Error('Unsupported file mode.');
+                  throw new Error("Unsupported file mode.");
                 }
                 const blob = z
                   .object({
-                    encoding: z.literal('base64'),
+                    encoding: z.literal("base64"),
                     content: z.string(),
                     size: z.number().max(1_048_576),
                   })
@@ -243,7 +243,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                     })(),
                   );
                 return collectReferences(
-                  Buffer.from(blob.content, 'base64').toString('utf8'),
+                  Buffer.from(blob.content, "base64").toString("utf8"),
                   entry.path,
                   resource.name,
                   commit.sha,
@@ -251,17 +251,17 @@ export function createGitHubProvider(options: ClientOptions): Provider {
               }),
             );
             const successful = references.flatMap((item) => {
-              if (item.status === 'rejected') {
+              if (item.status === "rejected") {
                 throw item.reason;
               }
               return item.value;
             });
             result[id] = {
-              state: 'available',
+              state: "available",
               observedAt: now(),
               data: { references: successful },
             };
-          } else if (id === 'github/classic-protection@1') {
+          } else if (id === "github/classic-protection@1") {
             try {
               const protection = z
                 .object({
@@ -281,7 +281,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                   ),
                 );
               result[id] = {
-                state: 'available',
+                state: "available",
                 observedAt: now(),
                 data: {
                   minimum:
@@ -306,13 +306,13 @@ export function createGitHubProvider(options: ClientOptions): Provider {
                 throw error;
               }
               result[id] = {
-                state: 'available',
+                state: "available",
                 observedAt: now(),
                 data: { minimum: 0 },
               };
             }
           } else {
-            throw new Error('Unknown evidence ID.');
+            throw new Error("Unknown evidence ID.");
           }
         } catch (error) {
           unavailable(id, error);

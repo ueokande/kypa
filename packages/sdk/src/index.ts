@@ -9,11 +9,11 @@ export function resourceKey(resource: ResourceIdentity): string {
 }
 
 export const severities = [
-  'info',
-  'low',
-  'medium',
-  'high',
-  'critical',
+  "info",
+  "low",
+  "medium",
+  "high",
+  "critical",
 ] as const;
 
 export type Severity = (typeof severities)[number];
@@ -25,9 +25,9 @@ export interface Resource extends ResourceIdentity {
 }
 
 export type Evidence =
-  | { state: 'available'; observedAt: string; data: unknown }
-  | { state: 'not-applicable'; observedAt: string }
-  | { state: 'unavailable'; observedAt: string; code: string; message: string };
+  | { state: "available"; observedAt: string; data: unknown }
+  | { state: "not-applicable"; observedAt: string }
+  | { state: "unavailable"; observedAt: string; code: string; message: string };
 
 export interface Location {
   path: string;
@@ -70,7 +70,7 @@ export interface Rule {
 }
 
 export interface ScanError {
-  phase: 'discovery' | 'collection' | 'evaluation';
+  phase: "discovery" | "collection" | "evaluation";
   code: string;
   message: string;
   resource?: string;
@@ -114,9 +114,9 @@ export interface Evaluation {
   rule: string;
   ruleVersion: string;
   severity: Severity;
-  status: 'pass' | 'fail' | 'not-applicable' | 'error';
+  status: "pass" | "fail" | "not-applicable" | "error";
   findingIds: string[];
-  evidence: { id: string; state: Evidence['state']; observedAt: string }[];
+  evidence: { id: string; state: Evidence["state"]; observedAt: string }[];
 }
 
 export interface Report {
@@ -128,7 +128,7 @@ export interface Report {
     toolVersion: string;
     policyVersion: 1;
     policyDigest: string;
-    status: 'complete' | 'partial';
+    status: "complete" | "partial";
   };
   scope: {
     requested: TargetConfig;
@@ -174,16 +174,16 @@ export class FatalError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'FatalError';
+    this.name = "FatalError";
   }
 }
 
 export function shouldFail(
   report: Report,
-  policy: 'never' | 'violation' | 'error',
+  policy: "never" | "violation" | "error",
 ): boolean {
   return (
-    (policy !== 'never' && report.errors.length > 0) ||
-    (policy === 'violation' && report.findings.length > 0)
+    (policy !== "never" && report.errors.length > 0) ||
+    (policy === "violation" && report.findings.length > 0)
   );
 }

@@ -17,10 +17,5 @@
     "rules": {
       "preset": "recommended"
     }
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single"
-    }
   }
 }

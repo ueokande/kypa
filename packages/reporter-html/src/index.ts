@@ -1,10 +1,10 @@
-import * as fsPromises from 'node:fs/promises';
-import * as path from 'node:path';
-import type { Reporter } from '@kypa/sdk';
+import * as fsPromises from "node:fs/promises";
+import * as path from "node:path";
+import type { Reporter } from "@kypa/sdk";
 
 export function createHtmlReporter(assetsDirectory: string): Reporter {
   return {
-    id: 'html',
+    id: "html",
 
     async write(report, options, context) {
       if (
@@ -12,7 +12,7 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
         !options.basePath ||
         !/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(options.basePath)
       ) {
-        throw new Error('Invalid HTML output options.');
+        throw new Error("Invalid HTML output options.");
       }
       const destination = path.resolve(
         context.policyDirectory,
@@ -20,7 +20,7 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
       );
       await fsPromises.mkdir(path.dirname(destination), { recursive: true });
       const stage = await fsPromises.mkdtemp(
-        path.join(path.dirname(destination), '.kypa-html-'),
+        path.join(path.dirname(destination), ".kypa-html-"),
       );
       try {
         await fsPromises.cp(assetsDirectory, stage, {
@@ -28,23 +28,23 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
           dereference: false,
         });
         const index = await fsPromises.readFile(
-          path.join(stage, 'index.html'),
-          'utf8',
+          path.join(stage, "index.html"),
+          "utf8",
         );
         await fsPromises.writeFile(
-          path.join(stage, 'index.html'),
-          index.replace('<head>', `<head><base href="${options.basePath}">`),
+          path.join(stage, "index.html"),
+          index.replace("<head>", `<head><base href="${options.basePath}">`),
         );
         await fsPromises.writeFile(
-          path.join(stage, 'data.json'),
+          path.join(stage, "data.json"),
           JSON.stringify(report),
         );
         context.signal?.throwIfAborted();
         try {
           await fsPromises.lstat(destination);
-          throw new Error('Output already exists.');
+          throw new Error("Output already exists.");
         } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
             throw error;
           }
         }

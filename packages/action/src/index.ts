@@ -1,12 +1,12 @@
-import * as path from 'node:path';
-import * as url from 'node:url';
-import * as core from '@actions/core';
-import { loadPolicy, runScan } from '@kypa/core';
-import { createGitHubProvider } from '@kypa/provider-github';
-import { createHtmlReporter } from '@kypa/reporter-html';
-import { jsonReporter } from '@kypa/reporter-json';
-import { builtInRules } from '@kypa/rules-github';
-import { FatalError, type Policy, type Report, shouldFail } from '@kypa/sdk';
+import * as path from "node:path";
+import * as url from "node:url";
+import * as core from "@actions/core";
+import { loadPolicy, runScan } from "@kypa/core";
+import { createGitHubProvider } from "@kypa/provider-github";
+import { createHtmlReporter } from "@kypa/reporter-html";
+import { jsonReporter } from "@kypa/reporter-json";
+import { builtInRules } from "@kypa/rules-github";
+import { FatalError, type Policy, type Report, shouldFail } from "@kypa/sdk";
 
 export interface Toolkit {
   getInput(name: string, options?: { required?: boolean }): string;
@@ -45,7 +45,7 @@ const defaults: ActionDependencies = {
         createHtmlReporter(
           path.resolve(
             path.dirname(url.fileURLToPath(import.meta.url)),
-            '../dashboard',
+            "../dashboard",
           ),
         ),
       ],
@@ -59,17 +59,17 @@ export async function run(
   dependencies: ActionDependencies = defaults,
 ): Promise<void> {
   try {
-    const token = toolkit.getInput('token', { required: true });
+    const token = toolkit.getInput("token", { required: true });
     if (!token.trim()) {
-      throw new FatalError('AUTHENTICATION', 'A collection token is required.');
+      throw new FatalError("AUTHENTICATION", "A collection token is required.");
     }
     toolkit.setSecret(token);
-    const failOn = toolkit.getInput('fail-on') || 'never';
-    if (failOn !== 'never' && failOn !== 'violation' && failOn !== 'error') {
-      throw new FatalError('INPUT', 'Invalid fail-on input.');
+    const failOn = toolkit.getInput("fail-on") || "never";
+    if (failOn !== "never" && failOn !== "violation" && failOn !== "error") {
+      throw new FatalError("INPUT", "Invalid fail-on input.");
     }
     const loaded = await dependencies.load(
-      toolkit.getInput('config') || 'kypa.yaml',
+      toolkit.getInput("config") || "kypa.yaml",
       builtInRules,
     );
     const report = await dependencies.scan(
@@ -78,18 +78,18 @@ export async function run(
       loaded.digest,
       token,
     );
-    toolkit.setOutput('run-id', report.run.id);
-    toolkit.setOutput('status', report.run.status);
-    toolkit.setOutput('violation-count', report.findings.length);
-    toolkit.setOutput('error-count', report.errors.length);
-    toolkit.summary.addHeading('Kypa scan');
+    toolkit.setOutput("run-id", report.run.id);
+    toolkit.setOutput("status", report.run.status);
+    toolkit.setOutput("violation-count", report.findings.length);
+    toolkit.setOutput("error-count", report.errors.length);
+    toolkit.summary.addHeading("Kypa scan");
     toolkit.summary.addRaw(
       `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}\n`,
     );
     await toolkit.summary.write();
     if (shouldFail(report, failOn)) {
       toolkit.setFailed(
-        'The generated scan report triggered the selected failure policy.',
+        "The generated scan report triggered the selected failure policy.",
       );
     }
   } catch (error) {
@@ -97,7 +97,7 @@ export async function run(
     toolkit.setFailed(
       error instanceof FatalError
         ? `Kypa failed (${error.code}). This run must not be published.`
-        : 'Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.',
+        : "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.",
     );
   }
 }
