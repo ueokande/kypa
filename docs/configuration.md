@@ -10,9 +10,9 @@ Use `kypa.yaml` by default or select another file with the Action's `config` inp
 version: 1
 
 targets:
-  organizations:
+  orgs:
     - example-org
-  repositories:
+  repos:
     - another-org/special-service
   exclude:
     - example-org/legacy-*
@@ -57,7 +57,7 @@ This example spans two owners. Confirm that the selected authentication covers b
 
 ## Targets
 
-`organizations` lists organization names for paginated enumeration. `repositories` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions. An empty effective target set is fatal.
+`orgs` lists organization names for paginated enumeration. `repos` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions. An empty effective target set is fatal.
 
 Repository matching is case-insensitive. Initial exclusion patterns support only `*`, which matches within one owner or repository name component and never crosses `/`. For example, `example-org/service-*` matches `example-org/service-api`; it does not match a nested path. Do not rely on `**`, `?`, character classes, or regular expressions.
 

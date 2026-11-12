@@ -21,7 +21,7 @@ Commit `kypa.yaml` in the central repository:
 ```yaml
 version: 1
 targets:
-  organizations:
+  orgs:
     - example-org
 rules:
   actions/full-sha:

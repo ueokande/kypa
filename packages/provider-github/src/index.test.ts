@@ -13,8 +13,8 @@ const repository = (id = 1, overrides = {}) => ({
 });
 
 const targets = {
-  organizations: ["org"],
-  repositories: [],
+  orgs: ["org"],
+  repos: [],
   exclude: [],
   includeArchived: false,
   includeForks: false,
@@ -53,7 +53,7 @@ test("discovers more than 100 repositories with pagination, union deduplication,
   const provider = createGitHubProvider({ ...settings, fetch: request });
   const result = await provider.discover({
     ...targets,
-    repositories: ["ORG/REPO-1"],
+    repos: ["ORG/REPO-1"],
     exclude: ["org/repo-2"],
   });
   expect(result.resources).toHaveLength(100);
@@ -72,8 +72,8 @@ test("explicit targets have the same archive/fork filters; inaccessible targets 
   });
   const result = await provider.discover({
     ...targets,
-    organizations: [],
-    repositories: ["org/fork", "org/missing"],
+    orgs: [],
+    repos: ["org/fork", "org/missing"],
   });
   expect(result.resources).toEqual([]);
   expect(result.excluded).toHaveLength(1);
@@ -118,8 +118,8 @@ test("collects default-branch references at a resolved commit, without raw file 
   const resource = (
     await provider.discover({
       ...targets,
-      organizations: [],
-      repositories: ["org/repo-1"],
+      orgs: [],
+      repos: ["org/repo-1"],
     })
   ).resources[0];
   expect(resource).toBeDefined();
@@ -156,8 +156,8 @@ test.each([false, true])(
     const resource = (
       await provider.discover({
         ...targets,
-        organizations: [],
-        repositories: ["org/repo-1"],
+        orgs: [],
+        repos: ["org/repo-1"],
       })
     ).resources[0];
     if (!resource) {
@@ -188,8 +188,8 @@ test("truncated trees cannot become successful empty evaluations", async () => {
   const resource = (
     await provider.discover({
       ...targets,
-      organizations: [],
-      repositories: ["org/repo-1"],
+      orgs: [],
+      repos: ["org/repo-1"],
     })
   ).resources[0];
   if (!resource) {
@@ -217,8 +217,8 @@ test("confirmed empty Git repositories are not applicable despite a default bran
   const resource = (
     await provider.discover({
       ...targets,
-      organizations: [],
-      repositories: ["org/repo-1"],
+      orgs: [],
+      repos: ["org/repo-1"],
     })
   ).resources[0];
   if (!resource) {
@@ -266,8 +266,8 @@ test("identical file blobs share one request while preserving separate file loca
   const resource = (
     await provider.discover({
       ...targets,
-      organizations: [],
-      repositories: ["org/repo-1"],
+      orgs: [],
+      repos: ["org/repo-1"],
     })
   ).resources[0];
   if (!resource) {

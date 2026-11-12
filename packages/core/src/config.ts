@@ -24,18 +24,16 @@ const rawPolicy = z
     version: z.literal(1),
     targets: z
       .object({
-        organizations: z
+        orgs: z
           .array(z.string().regex(new RegExp(`^${component}$`)))
           .default([]),
-        repositories: z.array(repository).default([]),
+        repos: z.array(repository).default([]),
         exclude: z.array(pattern).default([]),
         includeArchived: z.boolean().default(false),
         includeForks: z.boolean().default(false),
       })
       .strict()
-      .refine(
-        (value) => value.organizations.length + value.repositories.length > 0,
-      ),
+      .refine((value) => value.orgs.length + value.repos.length > 0),
     scan: z
       .object({
         concurrency: z.number().int().min(1).max(64).default(4),

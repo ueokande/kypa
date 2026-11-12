@@ -17,7 +17,7 @@ const rule: Rule = {
 };
 const source = `version: 1
 targets:
-  repositories: [org/repo]
+  repos: [org/repo]
 rules:
   test/rule: {}
 reporters:
@@ -122,7 +122,7 @@ test("HTML basePath errors identify the reporter and explain the URL path format
 });
 
 test.each([
-  source.replace("repositories: [org/repo]", "repositories: private-token"),
+  source.replace("repos: [org/repo]", "repos: private-token"),
   source.replace("test/rule: {}", "private-token: {severity: invalid}"),
   `${source}private-token: value\n`,
   source.replace(

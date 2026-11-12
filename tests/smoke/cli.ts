@@ -25,7 +25,7 @@ for (const scenario of ["report", "violation", "fatal", "invalid"]) {
       config,
       `version: 1
 targets:
-  repositories: [fixture/target]
+  repos: [fixture/target]
 rules:
   actions/full-sha: {}
   repository/required-reviews:

@@ -14,8 +14,8 @@ const resource: Resource = {
 const policy: Policy = {
   version: 1,
   targets: {
-    organizations: [],
-    repositories: ["org/repo"],
+    orgs: [],
+    repos: ["org/repo"],
     exclude: [],
     includeArchived: false,
     includeForks: false,

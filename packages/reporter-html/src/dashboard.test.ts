@@ -31,8 +31,8 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
     },
     scope: {
       requested: {
-        organizations: [],
-        repositories: [],
+        orgs: [],
+        repos: [],
         exclude: [],
         includeArchived: false,
         includeForks: false,

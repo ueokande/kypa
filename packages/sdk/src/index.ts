@@ -84,8 +84,8 @@ export interface Discovery {
 }
 
 export interface TargetConfig {
-  organizations: string[];
-  repositories: string[];
+  orgs: string[];
+  repos: string[];
   exclude: string[];
   includeArchived: boolean;
   includeForks: boolean;

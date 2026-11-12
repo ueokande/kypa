@@ -15,7 +15,7 @@ for (const scenario of ["report", "violation", "fatal"]) {
       path.join(directory, "kypa.yaml"),
       `version: 1
 targets:
-  repositories: [fixture/target]
+  repos: [fixture/target]
 rules:
   actions/full-sha: {}
   repository/required-reviews:

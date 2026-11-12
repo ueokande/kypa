@@ -5,8 +5,8 @@ import type { z } from "zod";
 const fields = new Set([
   "version",
   "targets",
-  "organizations",
-  "repositories",
+  "orgs",
+  "repos",
   "exclude",
   "includeArchived",
   "includeForks",

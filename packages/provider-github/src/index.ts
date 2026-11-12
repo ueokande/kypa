@@ -85,7 +85,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       };
 
       for (const org of [
-        ...new Set(targets.organizations.map((value) => value.toLowerCase())),
+        ...new Set(targets.orgs.map((value) => value.toLowerCase())),
       ]) {
         try {
           for await (const page of api.paginate(
@@ -106,7 +106,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           });
         }
       }
-      for (const name of targets.repositories) {
+      for (const name of targets.repos) {
         if (seen.has(name.toLowerCase())) {
           continue;
         }

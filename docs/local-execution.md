@@ -23,7 +23,7 @@ Create `kypa.yaml`, replacing the repository name with one you can access:
 ```yaml
 version: 1
 targets:
-  repositories: [your-org/your-repo]
+  repos: [your-org/your-repo]
 rules:
   actions/full-sha: {}
 reporters:
