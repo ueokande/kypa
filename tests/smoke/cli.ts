@@ -15,7 +15,7 @@ const help = childProcess.spawnSync(process.execPath, [entry, "--help"], {
 assert.equal(help.status, 0, help.stderr);
 assert.match(help.stdout, /Usage: kypa/);
 
-for (const scenario of ["report", "violation", "fatal"]) {
+for (const scenario of ["report", "violation", "fatal", "invalid"]) {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "kypa-cli-smoke-"),
   );
@@ -34,7 +34,7 @@ reporters:
   - name: json
     options: {path: report/report.json}
   - name: html
-    options: {directory: site, basePath: /}
+    options: {directory: site, basePath: ${scenario === "invalid" ? "./report" : "/"}}
 `,
     );
     const child = childProcess.spawnSync(
@@ -64,7 +64,12 @@ reporters:
       (child.stderr + child.stdout).includes("fixture-token"),
       false,
     );
-    if (scenario === "fatal") {
+    if (scenario === "fatal" || scenario === "invalid") {
+      if (scenario === "invalid") {
+        assert.match(child.stderr, /reporters\[1\]\.options\.basePath/);
+        assert.match(child.stderr, /starting and ending with/);
+        assert.equal(child.stderr.includes("./report"), false);
+      }
       await assert.rejects(
         fsPromises.access(path.join(directory, "report/report.json")),
       );
@@ -101,5 +106,5 @@ reporters:
   }
 }
 console.log(
-  "Bundled CLI smoke checks passed: help, JSON/HTML reports, failure policy, and missing authentication.",
+  "Bundled CLI smoke checks passed: help, JSON/HTML reports, failure policy, authentication, and configuration diagnostics.",
 );

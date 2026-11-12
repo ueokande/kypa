@@ -68,3 +68,5 @@ pnpm cli --config ./kypa.yaml --fail-on violation
 | `130`     | The scan was cancelled with Ctrl+C. Do not publish this run.                                                                    |
 
 Report generation is independent of the failure policy. Inspect report coverage and freshness as described in [results](results.md); exit code `0` alone does not establish compliance. The CLI does not publish reports or change target repository settings.
+
+Configuration errors identify the invalid field and explain the expected format. For example, `reporters[1].options.basePath` refers to the second reporter (indices start at zero); use `/` for a site served from the host root, or `/report/` for a site served under that URL path. YAML syntax errors include line and column numbers. Diagnostics do not echo configuration values.

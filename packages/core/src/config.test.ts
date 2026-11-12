@@ -1,8 +1,9 @@
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Rule } from "@kypa/sdk";
+import { formatFailure, type Rule } from "@kypa/sdk";
 import { afterEach, expect, test } from "vitest";
+import { z } from "zod";
 import { loadPolicy, matchesPattern, parsePolicy } from "./config.js";
 
 const rule: Rule = {
@@ -100,4 +101,108 @@ test("rejects overlapping, existing, escaping, and symlink output destinations",
   await expect(
     check(source.replace("report/report.json", "escape/new.json")),
   ).rejects.toThrow();
+});
+
+function diagnostic(text: string, rules: readonly Rule[] = [rule]): string {
+  try {
+    parsePolicy(text, rules);
+  } catch (error) {
+    return formatFailure(error);
+  }
+  throw new Error("Expected invalid configuration.");
+}
+
+test("HTML basePath errors identify the reporter and explain the URL path format", () => {
+  const message = diagnostic(
+    `${source}  - name: html\n    options: {directory: site, basePath: ./private-token}\n`,
+  );
+  expect(message).toContain("reporters[1].options.basePath");
+  expect(message).toContain('such as "/" or "/report/"');
+  expect(message).not.toContain("private-token");
+});
+
+test.each([
+  source.replace("repositories: [org/repo]", "repositories: private-token"),
+  source.replace("test/rule: {}", "private-token: {severity: invalid}"),
+  `${source}private-token: value\n`,
+  source.replace(
+    "path: report/report.json",
+    "path: report/report.json, private-token: true",
+  ),
+  source.replace("test/rule", "private-token"),
+])(
+  "configuration diagnostics never echo values, record keys, or unknown fields",
+  (text) => {
+    const message = diagnostic(text);
+    expect(message).toContain("Kypa failed (CONFIG)");
+    expect(message).not.toContain("private-token");
+  },
+);
+
+test("YAML errors show line and column without quoting the source", () => {
+  const message = diagnostic(`${source}private-token: [\n`);
+  expect(message).toMatch(/line \d+, column \d+/);
+  expect(message).not.toContain("private-token");
+  expect(diagnostic(`${source}version: 1\n`)).toContain("Duplicate YAML key");
+});
+
+test("missing targets and rule parameter errors include actionable field paths", () => {
+  expect(diagnostic(source.replace("[org/repo]", "[]"))).toContain(
+    "targets: Select at least one",
+  );
+  const text = source.replace(
+    "test/rule: {}",
+    "repository/required-reviews: {parameters: {minimum: 999}}",
+  );
+  const message = diagnostic(text, [
+    {
+      ...rule,
+      id: "repository/required-reviews",
+      validateParameters: (input) =>
+        z.object({ minimum: z.number().max(6) }).parse(input),
+    },
+  ]);
+  expect(message).toContain(
+    'rules["repository/required-reviews"].parameters.minimum',
+  );
+  expect(message).toContain("maximum");
+});
+
+test("unreadable policy files have safe, actionable diagnostics", async () => {
+  const file = path.join(
+    os.tmpdir(),
+    "kypa-missing-private-token",
+    "policy.yaml",
+  );
+  const error = await loadPolicy(file, [rule]).catch(
+    (failure: unknown) => failure,
+  );
+  const message = formatFailure(error);
+  expect(message).toContain("CONFIG_FILE");
+  expect(message).toContain("file path and read permissions");
+  expect(message).not.toContain("private-token");
+});
+
+test("existing output errors identify the affected reporter without printing its path", async () => {
+  const directory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), "kypa-config-"),
+  );
+  directories.push(directory);
+  const file = path.join(directory, "policy.yaml");
+  await fsPromises.writeFile(
+    file,
+    source.replace("report/report.json", "private-token.json"),
+  );
+  await fsPromises.writeFile(
+    path.join(directory, "private-token.json"),
+    "existing",
+  );
+  const error = await loadPolicy(file, [rule]).catch(
+    (failure: unknown) => failure,
+  );
+  const message = formatFailure(error);
+  expect(message).toContain(
+    "reporters[0].options.path: Output destination already exists",
+  );
+  expect(message).not.toContain("private-token");
 });

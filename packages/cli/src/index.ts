@@ -6,7 +6,7 @@ import { createGitHubProvider } from "@kypa/provider-github";
 import { createHtmlReporter } from "@kypa/reporter-html";
 import { jsonReporter } from "@kypa/reporter-json";
 import { builtInRules } from "@kypa/rules-github";
-import { FatalError, type Policy, type Report, shouldFail } from "@kypa/sdk";
+import { formatFailure, type Policy, type Report, shouldFail } from "@kypa/sdk";
 
 export interface CliDependencies {
   load: typeof loadPolicy;
@@ -117,11 +117,7 @@ export async function run(
       dependencies.stderr("Scan cancelled.");
       return 130;
     }
-    dependencies.stderr(
-      error instanceof FatalError
-        ? `Kypa failed (${error.code}). This run must not be published.`
-        : "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.",
-    );
+    dependencies.stderr(formatFailure(error));
     return 2;
   }
 }

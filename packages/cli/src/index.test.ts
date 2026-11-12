@@ -140,3 +140,20 @@ test("cancellation reaches the runner and returns a separate exit code", async (
   ).toBe(130);
   expect(deps.stderr).toHaveBeenCalledWith("Scan cancelled.");
 });
+
+test("CLI displays configuration diagnostics without exposing exception messages", async () => {
+  const deps = dependencies();
+  vi.mocked(deps.load).mockRejectedValue(
+    new FatalError("CONFIG", "private-token payload", [
+      'reporters[1].options.basePath: Use "/" or "/report/".',
+    ]),
+  );
+  expect(await run([], { GH_TOKEN: "private-token" }, deps)).toBe(2);
+  expect(deps.stderr).toHaveBeenCalledWith(
+    expect.stringContaining("reporters[1].options.basePath"),
+  );
+  expect(JSON.stringify(vi.mocked(deps.stderr).mock.calls)).not.toContain(
+    "private-token",
+  );
+  expect(deps.scan).not.toHaveBeenCalled();
+});

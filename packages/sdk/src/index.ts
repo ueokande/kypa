@@ -172,10 +172,24 @@ export class FatalError extends Error {
   constructor(
     public readonly code: string,
     message: string,
+    // Printable diagnostics must use trusted schema names and descriptions,
+    // never raw configuration values or arbitrary exception messages.
+    public readonly diagnostics: readonly string[] = [],
   ) {
     super(message);
     this.name = "FatalError";
   }
+}
+
+export function formatFailure(error: unknown): string {
+  if (error instanceof FatalError) {
+    return [
+      `Kypa failed (${error.code}).`,
+      ...error.diagnostics,
+      "This run must not be published.",
+    ].join("\n");
+  }
+  return "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.";
 }
 
 export function shouldFail(

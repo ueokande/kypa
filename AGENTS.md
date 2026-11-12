@@ -96,6 +96,8 @@ Violations must not prevent report generation or publication. Fatal configuratio
 
 Use the PAT only for collection. Keep HTML generation independent of hosting APIs and metadata. Separate scan and host-specific deployment permissions; the GitHub Pages example uses GITHUB_TOKEN and OIDC. Never publish secrets, raw API responses, or unnecessary source content. Escape untrusted rendered data.
 
+Configuration failures may include explicit safe diagnostics on FatalError. Build them from trusted schema names, constraints, and YAML line/column numbers; do not echo policy values, unknown keys, or arbitrary validation messages. Both adapters use formatFailure to display these diagnostics while keeping arbitrary error messages private.
+
 Use octokit for GitHub authentication, REST requests, response handling, Link-based pagination, retries, and rate-limit throttling. Keep it inside the GitHub provider. Use p-queue for configured concurrency, queued cancellation, and task timeouts; forward its task signal to Octokit. Avoid custom semaphore, retry, or sleep implementations. A task timeout includes Octokit's throttling and retry delays after leaving the local queue. Convert Octokit errors to safe domain errors and do not log raw request or response metadata. Reject external pagination destinations and redirects before sending credentials.
 
 Use fixture-based Vitest tests for rules, collection/evaluation failures, and reporters. Validate formatting, lint, types, tests, and relevant builds. Distinguish failed checks from unrun checks. Documentation-only examples cannot be claimed as tested against an implementation.

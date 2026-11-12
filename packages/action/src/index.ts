@@ -6,7 +6,13 @@ import { createGitHubProvider } from "@kypa/provider-github";
 import { createHtmlReporter } from "@kypa/reporter-html";
 import { jsonReporter } from "@kypa/reporter-json";
 import { builtInRules } from "@kypa/rules-github";
-import { FatalError, type Policy, type Report, shouldFail } from "@kypa/sdk";
+import {
+  FatalError,
+  formatFailure,
+  type Policy,
+  type Report,
+  shouldFail,
+} from "@kypa/sdk";
 
 export interface Toolkit {
   getInput(name: string, options?: { required?: boolean }): string;
@@ -94,10 +100,6 @@ export async function run(
     }
   } catch (error) {
     // Never forward arbitrary exception messages, API bodies, or policy contents to workflow logs.
-    toolkit.setFailed(
-      error instanceof FatalError
-        ? `Kypa failed (${error.code}). This run must not be published.`
-        : "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.",
-    );
+    toolkit.setFailed(formatFailure(error));
   }
 }

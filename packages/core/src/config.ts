@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { FatalError, type Policy, type Rule, severities } from "@kypa/sdk";
 import { parseDocument } from "yaml";
 import { z } from "zod";
+import { policyDiagnostics } from "./config-diagnostics.js";
 
 const component = "[A-Za-z0-9_.-]+";
 const repository = z.string().regex(new RegExp(`^${component}/${component}$`));
@@ -76,13 +77,34 @@ export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
     throw new FatalError(
       "CONFIG",
       "Policy YAML is invalid or contains duplicate keys.",
+      doc.errors.slice(0, 10).map((error) => {
+        const position = error.linePos?.[0];
+        const location = position
+          ? ` at line ${position.line}, column ${position.col}`
+          : "";
+        return error.code === "DUPLICATE_KEY"
+          ? `Duplicate YAML key${location}. Remove duplicate entries.`
+          : `Invalid YAML${location}. Check indentation, mappings, and sequences.`;
+      }),
     );
   }
-  const parsed = rawPolicy.safeParse(doc.toJS({ maxAliasCount: 50 }));
+  let data: unknown;
+  try {
+    data = doc.toJS({ maxAliasCount: 50 });
+  } catch {
+    throw new FatalError("CONFIG", "Policy YAML could not be read.", [
+      "Policy YAML aliases could not be resolved. Use plain values or reduce alias expansion.",
+    ]);
+  }
+  const parsed = rawPolicy.safeParse(data);
   if (!parsed.success) {
     throw new FatalError(
       "CONFIG",
       "Policy fields are invalid; check the configuration reference.",
+      policyDiagnostics(
+        parsed.error.issues,
+        new Set(rules.map((rule) => rule.id)),
+      ),
     );
   }
   const registry = new Map(rules.map((rule) => [rule.id, rule]));
@@ -93,13 +115,29 @@ export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
   for (const [id, setting] of Object.entries(parsed.data.rules)) {
     const rule = registry.get(id);
     if (!rule) {
-      throw new FatalError("CONFIG", "Policy selects an unknown rule.");
+      throw new FatalError("CONFIG", "Policy selects an unknown rule.", [
+        `rules: Unknown rule selected. Available rules: ${[...registry.keys()].join(", ")}.`,
+      ]);
     }
     let parameters: unknown;
     try {
       parameters = rule.validateParameters(setting.parameters ?? {});
-    } catch {
-      throw new FatalError("CONFIG", "Rule parameters are invalid.");
+    } catch (error) {
+      throw new FatalError(
+        "CONFIG",
+        "Rule parameters are invalid.",
+        error instanceof z.ZodError
+          ? policyDiagnostics(
+              error.issues.map((issue) => ({
+                ...issue,
+                path: ["rules", id, "parameters", ...issue.path],
+              })),
+              new Set(registry.keys()),
+            )
+          : [
+              `rules["${id}"].parameters: Invalid parameters. Check this rule's configuration reference.`,
+            ],
+      );
     }
     if (setting.enabled) {
       selected.push({
@@ -110,7 +148,9 @@ export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
     }
   }
   if (!selected.length) {
-    throw new FatalError("CONFIG", "At least one enabled rule is required.");
+    throw new FatalError("CONFIG", "At least one enabled rule is required.", [
+      "rules: Select at least one rule with enabled: true (the default).",
+    ]);
   }
   return { ...parsed.data, rules: selected };
 }
@@ -153,12 +193,21 @@ export async function loadPolicy(
   localPath: string,
   rules: readonly Rule[],
 ): Promise<{ policy: Policy; directory: string; digest: string }> {
-  const policyPath = await fsPromises.realpath(path.resolve(localPath));
+  let policyPath: string;
+  let text: string;
+  try {
+    policyPath = await fsPromises.realpath(path.resolve(localPath));
+    text = await fsPromises.readFile(policyPath, "utf8");
+  } catch {
+    throw new FatalError("CONFIG_FILE", "Cannot read the policy file.", [
+      "Cannot read the policy file. Check the configuration file path and read permissions.",
+    ]);
+  }
   const directory = path.dirname(policyPath);
-  const text = await fsPromises.readFile(policyPath, "utf8");
   const policy = parsePolicy(text, rules);
   const destinations: string[] = [];
-  for (const reporter of policy.reporters) {
+  for (const [index, reporter] of policy.reporters.entries()) {
+    const field = `reporters[${index}].options.${reporter.name === "json" ? "path" : "directory"}`;
     const destination = await canonical(
       path.resolve(
         directory,
@@ -173,11 +222,16 @@ export async function loadPolicy(
       throw new FatalError(
         "OUTPUT_PATH",
         "Outputs must be dedicated paths beneath the policy directory.",
+        [
+          `${field}: Choose a dedicated path beneath the policy directory that does not contain the policy file.`,
+        ],
       );
     }
     for (const other of destinations) {
       if (within(other, destination) || within(destination, other)) {
-        throw new FatalError("OUTPUT_PATH", "Reporter destinations overlap.");
+        throw new FatalError("OUTPUT_PATH", "Reporter destinations overlap.", [
+          `${field}: Output destinations overlap. Use separate, non-nested paths for each reporter.`,
+        ]);
       }
     }
     try {
@@ -185,6 +239,9 @@ export async function loadPolicy(
       throw new FatalError(
         "OUTPUT_PATH",
         "Output destination already exists; use a fresh generated destination.",
+        [
+          `${field}: Output destination already exists. Choose a fresh destination or remove only previously generated output.`,
+        ],
       );
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {

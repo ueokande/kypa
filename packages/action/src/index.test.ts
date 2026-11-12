@@ -79,3 +79,21 @@ test("invalid input and unusable authentication fail before collection", async (
     expect.stringContaining("AUTHENTICATION"),
   );
 });
+
+test("Action displays trusted configuration diagnostics without exposing exception messages", async () => {
+  const core = toolkit();
+  await run(core, {
+    load,
+    scan: async () => {
+      throw new FatalError("CONFIG", "secret payload", [
+        'reporters[1].options.basePath: Use "/" or "/report/".',
+      ]);
+    },
+  });
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("reporters[1].options.basePath"),
+  );
+  expect(JSON.stringify(vi.mocked(core.setFailed).mock.calls)).not.toContain(
+    "secret payload",
+  );
+});
