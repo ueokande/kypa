@@ -1,4 +1,4 @@
-# GitHub Action and private Pages
+# GitHub Action and HTML reports
 
 > Proposed first-release Action contract. `ueokande/kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
 
@@ -8,28 +8,32 @@ The initial supported entry point is the root GitHub Action in `ueokande/kypa`. 
 
 Once a release exists, use its published version tag, such as the illustrative `ueokande/kypa@v1.0.0`, or preferably pin its reviewed full release-commit SHA. Review the release notes and recorded source provenance when selecting a version.
 
+Use distribution tags named `vX.Y.Z`. Tags and GitHub Releases named `source-vX.Y.Z` track source versioning and do not contain the compiled Action; they are not runnable Action references. A source Release can exist before the distribution build finishes.
+
 The development branch (`master`) does not contain compiled Action JavaScript and is not a supported runnable reference. Use the release commit rather than its underlying source commit. Exact version tags remain fixed; a moving `v1` alias is not part of the initial documented contract.
 
 ## Inputs and outputs
 
-| Input | Required | Default |
-| --- | --- | --- |
-| `token` | Yes | None; pass the central `KYPA_PAT` secret. |
-| `config` | No | `kypa.yaml` |
-| `fail-on` | No | `never`; failure policies below. |
+| Input     | Required | Default                                   |
+| --------- | -------- | ----------------------------------------- |
+| `token`   | Yes      | None; pass the central `KYPA_PAT` secret. |
+| `config`  | No       | `kypa.yaml`                               |
+| `fail-on` | No       | `never`; failure policies below.          |
 
 After successful report generation, proposed outputs are:
 
-| Output | Meaning |
-| --- | --- |
-| `run-id` | Identity of this scan. |
-| `status` | `complete` or `partial`, independent of compliance. |
-| `violation-count` | Number of findings. |
-| `error-count` | Discovery, collection, and evaluation errors. |
+| Output            | Meaning                                             |
+| ----------------- | --------------------------------------------------- |
+| `run-id`          | Identity of this scan.                              |
+| `status`          | `complete` or `partial`, independent of compliance. |
+| `violation-count` | Number of findings.                                 |
+| `error-count`     | Discovery, collection, and evaluation errors.       |
 
 The Action also writes an aggregate job summary. Do not assume outputs exist after a fatal failure.
 
-## Configure access before publishing
+## Example deployment: private GitHub Pages
+
+The `html` reporter generates a portable static site. The workflow below uses GitHub Pages as one deployment example; you can replace its artifact/deploy steps with another static host while keeping the same scan and report configuration. Configure authentication and access restrictions on your chosen host.
 
 In the central execution repository, set Pages build source to **GitHub Actions** and explicitly configure private/access-controlled Pages visibility under your enterprise's supported settings. Verify access with an authorized viewer and an unauthorized viewer. Internal repository visibility alone is insufficient: Pages is not automatically private. Deployment does not configure visibility. Do not publish until the intended restriction is established.
 
@@ -46,7 +50,7 @@ name: Kypa policy scan
 
 on:
   schedule:
-    - cron: '17 0 * * *'
+    - cron: "17 0 * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -93,7 +97,7 @@ jobs:
 
 The schedule requests 00:17 UTC / 09:17 JST daily. GitHub schedules are best effort, can be delayed, and run from the default branch. Keep the workflow and central policy on that branch. `workflow_dispatch` provides a manual run.
 
-For a project site at `/kypa-monitor/`, set `reporters` Pages `basePath` to `/kypa-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
+For a project site at `/kypa-monitor/`, set the `html` reporter’s `basePath` to `/kypa-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
 
 ## Publication behavior
 
@@ -105,12 +109,14 @@ A fatal scan or failed deployment leaves the previous Pages result in place. Its
 
 The `fail-on` input controls failure after report generation:
 
-| Value | Behavior |
-| --- | --- |
-| `never` | Succeed after report generation, including violations and partial coverage. |
-| `violation` | Fail for any finding or discovery, collection, or evaluation error. |
-| `error` | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step. |
+| Value       | Behavior                                                                                     |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `never`     | Succeed after report generation, including violations and partial coverage.                  |
+| `violation` | Fail for any finding or discovery, collection, or evaluation error.                          |
+| `error`     | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step. |
 
 The runner returns structured outcomes rather than CLI exit codes. The Action marks the step as failed when a generated report triggers the selected failure policy or a fatal configuration, authentication, or output error occurs. Fatal failures always fail the Action regardless of `fail-on`.
 
 Globally unusable authentication is fatal; isolated target access failures can yield a partial report. A reporter failure is fatal even if another reporter already wrote files. Generated files from a fatal run must not be deployed. Configuration validation checks rule IDs, parameters, and reporter options before collection; it does not prove remote access. Logs go to stderr and structured results go through the configured reporters.
+
+Coverage errors are emitted as workflow warnings with their error codes and remediation hints. Reports are still generated for partial scans; `fail-on` controls whether those errors fail the step.

@@ -1,0 +1,18 @@
+{
+  "name": "@kypa/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rslib build",
+    "start": "node ../../dist/cli/index.js"
+  },
+  "dependencies": {
+    "@kypa/core": "workspace:*",
+    "@kypa/sdk": "workspace:*",
+    "@kypa/provider-github": "workspace:*",
+    "@kypa/rules-github": "workspace:*",
+    "@kypa/reporter-json": "workspace:*",
+    "@kypa/reporter-html": "workspace:*"
+  }
+}

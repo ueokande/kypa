@@ -1,0 +1,10 @@
+{
+  "name": "@kypa/reporter-json",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@kypa/sdk": "workspace:*"
+  }
+}

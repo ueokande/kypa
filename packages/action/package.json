@@ -1,0 +1,16 @@
+{
+  "name": "@kypa/action",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@kypa/sdk": "workspace:*",
+    "@kypa/core": "workspace:*",
+    "@kypa/provider-github": "workspace:*",
+    "@kypa/rules-github": "workspace:*",
+    "@kypa/reporter-json": "workspace:*",
+    "@kypa/reporter-html": "workspace:*",
+    "@actions/core": "3.0.1"
+  }
+}

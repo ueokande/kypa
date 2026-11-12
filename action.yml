@@ -1,0 +1,24 @@
+name: kypa
+description: Scan GitHub repositories against centrally configured policies.
+inputs:
+  token:
+    description: PAT with access to the target repositories and selected APIs.
+    required: true
+  config:
+    description: Path to the central policy file.
+    default: kypa.yaml
+  fail-on:
+    description: Failure policy after report generation (never, violation, or error).
+    default: never
+outputs:
+  run-id:
+    description: Scan run identity.
+  status:
+    description: Scan coverage status (complete or partial).
+  violation-count:
+    description: Number of findings.
+  error-count:
+    description: Number of discovery, collection, and evaluation errors.
+runs:
+  using: node24
+  main: dist/action/index.js

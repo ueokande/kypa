@@ -1,0 +1,97 @@
+name: Release
+on:
+  push:
+    branches: [master]
+permissions:
+  contents: read
+concurrency:
+  group: kypa-release
+  cancel-in-progress: false
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      source_tag: ${{ steps.release.outputs.tag_name }}
+      source: ${{ steps.release.outputs.sha }}
+    steps:
+      - uses: googleapis/release-please-action@v5.0.0
+        id: release
+        with:
+          target-branch: master
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.release.outputs.source }}
+      source_tag: ${{ steps.release.outputs.source_tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          ref: ${{ needs.release-please.outputs.source }}
+          persist-credentials: false
+      - name: Prepare distribution version
+        id: release
+        env:
+          SOURCE_TAG: ${{ needs.release-please.outputs.source_tag }}
+          SOURCE_SHA: ${{ needs.release-please.outputs.source }}
+        run: |
+          {
+            echo "source=$SOURCE_SHA"
+            echo "source_tag=$SOURCE_TAG"
+            echo "version=${SOURCE_TAG#source-}"
+          } >> "$GITHUB_OUTPUT"
+      - uses: pnpm/action-setup@v5.0.0
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - uses: actions/upload-artifact@v6.0.0
+        with:
+          name: action-release-build
+          path: |
+            dist/action
+            dist/dashboard
+          if-no-files-found: error
+          retention-days: 1
+  publish-tag:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.version }}
+      SOURCE_TAG: ${{ needs.build.outputs.source_tag }}
+      SOURCE_SHA: ${{ needs.build.outputs.source }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          ref: ${{ needs.build.outputs.source }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          name: action-release-build
+          path: dist
+      - name: Copy source GitHub Release notes
+        run: gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/kypa-release-notes.md"
+      - name: Commit the build and create an immutable distribution tag
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --force -- dist/action dist/dashboard
+          git commit -m "release: prepare $RELEASE_VERSION from $SOURCE_SHA"
+          git tag --annotate "$RELEASE_VERSION" -m "Release $RELEASE_VERSION (source $SOURCE_SHA)"
+          git push origin "refs/tags/$RELEASE_VERSION"
+      - name: Publish distribution GitHub Release
+        run: gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
