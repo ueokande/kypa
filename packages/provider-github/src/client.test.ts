@@ -397,3 +397,31 @@ test("operation timeouts also bound Octokit's rate-limit waits", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
   expect(transport).toHaveBeenCalledTimes(1);
 });
+
+test("pagination HTTP 409 is an error rather than a successful empty listing", async () => {
+  const transport = vi
+    .fn<typeof fetch>()
+    .mockImplementation(
+      async () => new Response("private-token", { status: 409 }),
+    );
+  const pages = new GitHubClient({
+    ...settings,
+    retries: 0,
+    fetch: transport,
+  }).paginate("/orgs/org/repos");
+  await expect(pages.next()).rejects.toMatchObject({
+    status: 409,
+    code: "HTTP",
+  });
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+test("paginated endpoints reject objects that are not repository lists", async () => {
+  const pages = new GitHubClient({
+    ...settings,
+    fetch: async () => Response.json({ unexpected: true }),
+  }).paginate("/orgs/org/repos");
+  await expect(pages.next()).rejects.toMatchObject({
+    code: "INVALID_RESPONSE",
+  });
+});

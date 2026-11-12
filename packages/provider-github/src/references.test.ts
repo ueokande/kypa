@@ -64,3 +64,38 @@ test.each([
     ).toThrow();
   },
 );
+
+test("same-repository $/ references are local and require no external SHA", () => {
+  expect(
+    collectReferences(
+      "jobs:\n  check:\n    steps:\n      - uses: $/path/to/action\n",
+      ".github/workflows/ci.yml",
+      "org/repo",
+      "a".repeat(40),
+    ),
+  ).toEqual([]);
+});
+
+test.each([
+  "runs: {using: 42}\n",
+  "runs: {using: unexpected}\n",
+  "runs: {using: composite}\n",
+])(
+  "invalid Action manifests cannot become not-applicable evaluations",
+  (text) => {
+    expect(() =>
+      collectReferences(text, "action.yml", "org/repo", "a".repeat(40)),
+    ).toThrow();
+  },
+);
+
+test("same-repository $/ references reject an explicit @ref", () => {
+  expect(() =>
+    collectReferences(
+      "jobs:\n  check:\n    steps:\n      - uses: $/action@main\n",
+      ".github/workflows/ci.yml",
+      "org/repo",
+      "a".repeat(40),
+    ),
+  ).toThrow("cannot specify @ref");
+});

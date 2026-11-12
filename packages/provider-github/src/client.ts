@@ -116,7 +116,27 @@ export class GitHubClient {
       per_page: 100,
       request: signal ? { signal } : {},
     });
-    for await (const response of this.api.paginate.iterator(request)) {
+    let pageError: unknown;
+    // Octokit's iterator turns HTTP 409 into an empty page. Preserve that
+    // failure so an incomplete organization listing cannot look successful.
+    const checkedRequest = Object.assign(
+      async (parameters: Parameters<typeof request>[0]) => {
+        try {
+          return await request(parameters);
+        } catch (error) {
+          pageError = error;
+          throw error;
+        }
+      },
+      request,
+    );
+    for await (const response of this.api.paginate.iterator(checkedRequest)) {
+      if (pageError !== undefined) {
+        throw pageError;
+      }
+      if (!Array.isArray(response.data)) {
+        throw new ApiError(response.status, "INVALID_RESPONSE");
+      }
       yield response.data;
     }
   }
@@ -143,6 +163,9 @@ function safeError(error: unknown): Error {
     return new FatalError(
       "AUTHENTICATION",
       "GitHub authentication is unusable.",
+      [
+        "GitHub returned HTTP 401. Check that the collection token is valid, unexpired, and available to this process.",
+      ],
     );
   }
   if (

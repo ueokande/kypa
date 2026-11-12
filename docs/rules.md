@@ -20,7 +20,7 @@ steps:
   - uses: example-owner/example-action@0123456789abcdef0123456789abcdef01234567
 ```
 
-Tags such as `@v1` and branch names such as `@main` fail this textual policy. Local `./` references are distinguished from remote `owner/repository@ref` references. An explicit remote reference back to the same repository is still remote and requires a SHA; a local path does not. Docker references (`docker://...`) are outside this check. No relevant remote references yields `not-applicable` rather than a claimed pass.
+Tags such as `@v1` and branch names such as `@main` fail this textual policy. Local `./` references and inherently pinned same-repository `$/` references are distinguished from remote `owner/repository@ref` references. An explicit remote reference back to the same repository is still remote and requires a SHA; a local path does not. A `$/` reference cannot include an explicit `@ref`. Docker references (`docker://...`) are outside this check. No relevant remote references yields `not-applicable` rather than a claimed pass.
 
 The rule does not recursively fetch remote actions or inspect their transitive dependencies. A valid SHA string guarantees neither existence nor safety, provenance, review, or immutability of external artifacts. Parse failures and unsupported reference forms must be reported as errors rather than silently passing. Findings identify path and line and link to the scanned commit.
 

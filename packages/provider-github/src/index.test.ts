@@ -198,8 +198,8 @@ test("truncated trees cannot become successful empty evaluations", async () => {
   expect(
     (await provider.collect(resource, ["github/action-references@1"]))[
       "github/action-references@1"
-    ]?.state,
-  ).toBe("unavailable");
+    ],
+  ).toMatchObject({ state: "unavailable", code: "TRUNCATED_TREE" });
 });
 
 test("confirmed empty Git repositories are not applicable despite a default branch name", async () => {
@@ -283,4 +283,126 @@ test("identical file blobs share one request while preserving separate file loca
       (evidence.data as { references: unknown[] }).references,
     ).toHaveLength(2);
   }
+});
+
+test.each([403, 404, 429, 503])(
+  "organization discovery explains HTTP %s without exposing response bodies",
+  async (status) => {
+    const provider = createGitHubProvider({
+      ...settings,
+      fetch: async () =>
+        Response.json(
+          { message: "fixture-token private response" },
+          { status },
+        ),
+    });
+    const result = await provider.discover(targets);
+    expect(result.errors[0]?.code).toContain(`GITHUB_${status}_`);
+    expect(result.errors[0]?.message).toContain(String(status));
+    expect(JSON.stringify(result)).not.toContain("fixture-token");
+    if (status === 404) {
+      expect(result.errors[0]?.message).toContain("personal account");
+      expect(result.errors[0]?.message).toContain("targets.repos");
+    }
+  },
+);
+
+test("a later discovery page failure preserves already discovered resources and missing coverage", async () => {
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) =>
+      path.includes("page=2")
+        ? new Response("", { status: 409 })
+        : Response.json([repository()], {
+            headers: {
+              link: '<https://api.github.com/orgs/org/repos?page=2>; rel="next"',
+            },
+          }),
+    ),
+  });
+  const result = await provider.discover(targets);
+  expect(result.resources).toHaveLength(1);
+  expect(result.errors[0]?.code).toBe("GITHUB_409_HTTP");
+});
+
+test("omitted review requirements in classic protection mean zero required reviews", async () => {
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) => {
+      if (path.includes("/commits/")) {
+        return { sha, commit: { tree: { sha } } };
+      }
+      if (path.endsWith("/protection")) {
+        return { enforce_admins: { enabled: true } };
+      }
+      return repository();
+    }),
+  });
+  const [resource] = (
+    await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
+  ).resources;
+  expect(resource).toBeDefined();
+  if (!resource) {
+    throw new Error("Missing fixture resource.");
+  }
+  const evidence = await provider.collect(resource, [
+    "github/classic-protection@1",
+  ]);
+  expect(evidence["github/classic-protection@1"]).toMatchObject({
+    state: "available",
+    data: { minimum: 0 },
+  });
+});
+
+test("a file error cannot hide a concurrent fatal authentication failure", async () => {
+  const other = "b".repeat(40);
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) => {
+      if (path.includes("/commits/")) {
+        return { sha, commit: { tree: { sha } } };
+      }
+      if (path.includes("/trees/")) {
+        return {
+          truncated: false,
+          tree: [sha, other].map((id, index) => ({
+            path: `.github/workflows/${index}.yml`,
+            sha: id,
+            type: "blob",
+            mode: "100644",
+          })),
+        };
+      }
+      if (path.includes(`/blobs/${sha}`)) {
+        return new Response("private source", { status: 404 });
+      }
+      if (path.includes(`/blobs/${other}`)) {
+        return new Response("private token", { status: 401 });
+      }
+      return repository();
+    }),
+  });
+  const [resource] = (
+    await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
+  ).resources;
+  if (!resource) {
+    throw new Error("Missing fixture resource.");
+  }
+  await expect(
+    provider.collect(resource, ["github/action-references@1"]),
+  ).rejects.toMatchObject({ code: "AUTHENTICATION" });
+});
+
+test("case-insensitive duplicate inaccessible targets are requested and reported once", async () => {
+  const request = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async () => new Response("", { status: 404 }));
+  const provider = createGitHubProvider({ ...settings, fetch: request });
+  const result = await provider.discover({
+    ...targets,
+    orgs: [],
+    repos: ["org/missing", "ORG/MISSING"],
+  });
+  expect(request).toHaveBeenCalledTimes(1);
+  expect(result.errors).toHaveLength(1);
 });

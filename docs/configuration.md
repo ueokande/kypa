@@ -57,7 +57,7 @@ This example spans two owners. Confirm that the selected authentication covers b
 
 ## Targets
 
-`orgs` lists organization names for paginated enumeration. `repos` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions. An empty effective target set is fatal.
+`orgs` lists GitHub Organization names for paginated enumeration; personal accounts are not organizations. For a personal account, enumerate the accessible repositories with a tool such as `gh repo list OWNER --limit 10000 --json nameWithOwner --jq '.[].nameWithOwner'` and place the names in `repos`. `repos` lists exact `owner/name` identities. Take the union, deduplicate case-insensitively, then apply archive/fork filters and exclusions. Explicit repositories are subject to the same filters. `includeArchived` and `includeForks` both default to `false`. Exclusions take precedence over all inclusions. An empty effective target set is fatal.
 
 Repository matching is case-insensitive. Initial exclusion patterns support only `*`, which matches within one owner or repository name component and never crosses `/`. For example, `example-org/service-*` matches `example-org/service-api`; it does not match a nested path. Do not rely on `**`, `?`, character classes, or regular expressions.
 
