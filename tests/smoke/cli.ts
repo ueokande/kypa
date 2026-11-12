@@ -15,7 +15,13 @@ const help = childProcess.spawnSync(process.execPath, [entry, "--help"], {
 assert.equal(help.status, 0, help.stderr);
 assert.match(help.stdout, /Usage: kypa/);
 
-for (const scenario of ["report", "violation", "fatal", "invalid"]) {
+for (const scenario of [
+  "report",
+  "violation",
+  "fatal",
+  "invalid",
+  "discovery",
+]) {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "kypa-cli-smoke-"),
   );
@@ -25,7 +31,7 @@ for (const scenario of ["report", "violation", "fatal", "invalid"]) {
       config,
       `version: 1
 targets:
-  repos: [fixture/target]
+  ${scenario === "discovery" ? "orgs: [fixture-user]" : "repos: [fixture/target]"}
 rules:
   actions/full-sha: {}
   repository/required-reviews:
@@ -46,7 +52,11 @@ reporters:
         "--config",
         config,
         "--fail-on",
-        scenario === "violation" ? "violation" : "never",
+        scenario === "violation"
+          ? "violation"
+          : scenario === "discovery"
+            ? "error"
+            : "never",
       ],
       {
         cwd: root,
@@ -57,7 +67,11 @@ reporters:
     );
     assert.equal(
       child.status,
-      scenario === "report" ? 0 : scenario === "violation" ? 1 : 2,
+      scenario === "report"
+        ? 0
+        : scenario === "violation" || scenario === "discovery"
+          ? 1
+          : 2,
       child.stderr + child.stdout,
     );
     assert.equal(
@@ -81,6 +95,15 @@ reporters:
         "utf8",
       ),
     );
+    if (scenario === "discovery") {
+      assert.equal(report.run.status, "partial");
+      assert.equal(report.resources.length, 0);
+      assert.equal(report.errors[0].code, "GITHUB_404_HTTP");
+      assert.match(child.stderr, /HTTP 404/);
+      assert.match(child.stderr, /personal account/);
+      assert.match(child.stderr, /targets.repos/);
+      continue;
+    }
     assert.equal(report.run.status, "complete");
     assert.equal(report.findings.length, 2);
     assert.match(child.stdout, /violations: 2/);

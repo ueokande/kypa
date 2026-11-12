@@ -9,6 +9,7 @@ import { builtInRules } from "@kypa/rules-github";
 import {
   FatalError,
   formatFailure,
+  formatReportError,
   type Policy,
   type Report,
   shouldFail,
@@ -22,6 +23,8 @@ export interface Toolkit {
   setOutput(name: string, value: string | number): void;
 
   setFailed(message: string): void;
+
+  warning(message: string): void;
 
   summary: {
     addHeading(text: string): unknown;
@@ -65,14 +68,22 @@ export async function run(
   dependencies: ActionDependencies = defaults,
 ): Promise<void> {
   try {
-    const token = toolkit.getInput("token", { required: true });
+    const token = toolkit.getInput("token");
     if (!token.trim()) {
-      throw new FatalError("AUTHENTICATION", "A collection token is required.");
+      throw new FatalError(
+        "AUTHENTICATION",
+        "A collection token is required.",
+        [
+          "The token input is empty. Pass a collection token through the Action's token input.",
+        ],
+      );
     }
     toolkit.setSecret(token);
     const failOn = toolkit.getInput("fail-on") || "never";
     if (failOn !== "never" && failOn !== "violation" && failOn !== "error") {
-      throw new FatalError("INPUT", "Invalid fail-on input.");
+      throw new FatalError("INPUT", "Invalid fail-on input.", [
+        "fail-on: Use never, violation, or error.",
+      ]);
     }
     const loaded = await dependencies.load(
       toolkit.getInput("config") || "kypa.yaml",
@@ -92,6 +103,9 @@ export async function run(
     toolkit.summary.addRaw(
       `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}\n`,
     );
+    for (const error of report.errors) {
+      toolkit.warning(formatReportError(error));
+    }
     await toolkit.summary.write();
     if (shouldFail(report, failOn)) {
       toolkit.setFailed(

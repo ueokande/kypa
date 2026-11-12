@@ -6,7 +6,13 @@ import { createGitHubProvider } from "@kypa/provider-github";
 import { createHtmlReporter } from "@kypa/reporter-html";
 import { jsonReporter } from "@kypa/reporter-json";
 import { builtInRules } from "@kypa/rules-github";
-import { formatFailure, type Policy, type Report, shouldFail } from "@kypa/sdk";
+import {
+  formatFailure,
+  formatReportError,
+  type Policy,
+  type Report,
+  shouldFail,
+} from "@kypa/sdk";
 
 export interface CliDependencies {
   load: typeof loadPolicy;
@@ -111,6 +117,9 @@ export async function run(
     dependencies.stdout(
       `Status: ${report.run.status}\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}`,
     );
+    for (const error of report.errors) {
+      dependencies.stderr(formatReportError(error).replaceAll(token, "***"));
+    }
     return shouldFail(report, failOn) ? 1 : 0;
   } catch (error) {
     if (signal?.aborted) {

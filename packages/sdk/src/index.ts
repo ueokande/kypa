@@ -192,6 +192,13 @@ export function formatFailure(error: unknown): string {
   return "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.";
 }
 
+export function formatReportError(error: Report["errors"][number]): string {
+  const context = [error.phase, error.resource, error.rule]
+    .filter(Boolean)
+    .join(" ");
+  return `${context} [${error.code}]: ${error.message}`;
+}
+
 export function shouldFail(
   report: Report,
   policy: "never" | "violation" | "error",

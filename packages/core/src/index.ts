@@ -54,7 +54,9 @@ export async function runScan(
     dependencies.signal,
   );
   if (!discovery.resources.length && !discovery.errors.length) {
-    throw new FatalError("EMPTY_TARGETS", "No effective targets remain.");
+    throw new FatalError("EMPTY_TARGETS", "No effective targets remain.", [
+      "No repositories remain after discovery and filters. Check targets.orgs, targets.repos, exclusions, and includeArchived/includeForks.",
+    ]);
   }
   const report: Report = {
     schemaVersion: 1,
@@ -97,11 +99,13 @@ export async function runScan(
     ];
     let evidence: Record<string, Evidence>;
     try {
-      evidence = await dependencies.provider.collect(
-        resource,
-        ids,
-        dependencies.signal,
-      );
+      evidence = ids.length
+        ? await dependencies.provider.collect(
+            resource,
+            ids,
+            dependencies.signal,
+          )
+        : {};
     } catch (error) {
       if (error instanceof FatalError || dependencies.signal?.aborted) {
         throw error;
@@ -197,19 +201,42 @@ export async function runScan(
   }
   report.run.completedAt = now().toISOString();
   report.run.status = report.errors.length ? "partial" : "complete";
-  for (const selected of policy.reporters) {
+  for (const [index, selected] of policy.reporters.entries()) {
     dependencies.signal?.throwIfAborted();
     try {
       await reporterMap.get(selected.name)?.write(report, selected.options, {
         policyDirectory: dependencies.policyDirectory,
         ...(dependencies.signal ? { signal: dependencies.signal } : {}),
       });
-    } catch {
+    } catch (error) {
+      dependencies.signal?.throwIfAborted();
       throw new FatalError(
         "OUTPUT",
         "Reporter failed; this run must not be published.",
+        [`reporters[${index}]: ${describeOutputError(error)}`],
       );
     }
   }
   return report;
+}
+
+function describeOutputError(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? error.code
+      : undefined;
+  switch (code) {
+    case "EACCES":
+    case "EPERM":
+    case "EROFS":
+      return "Cannot write the report. Check output directory permissions and read-only mounts.";
+    case "ENOSPC":
+      return "Cannot write the report because the filesystem has no space left. Free space and use fresh output destinations.";
+    case "EEXIST":
+      return "The output destination already exists. Choose a fresh destination.";
+    case "ENOENT":
+      return "Required output files or dashboard assets are missing. Run pnpm build and check output directory access.";
+    default:
+      return "Could not generate the report. Check writable output directories, available space, and dashboard build assets.";
+  }
 }

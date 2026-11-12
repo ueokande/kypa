@@ -12,6 +12,9 @@ globalThis.fetch = async (input, init) => {
     throw new Error("Unexpected fixture authentication.");
   }
   const path = url.pathname;
+  if (path === "/orgs/fixture-user/repos") {
+    return Response.json({ message: "Not Found" }, { status: 404 });
+  }
   if (path === "/repos/fixture/target") {
     return Response.json({
       id: 42,

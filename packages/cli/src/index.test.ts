@@ -6,7 +6,14 @@ const report = {
   run: { status: "partial" },
   scope: { evaluated: 1 },
   findings: [{}],
-  errors: [{}],
+  errors: [
+    {
+      phase: "discovery",
+      code: "GITHUB_404_HTTP",
+      message: "GitHub returned HTTP 404. Check the target and token access.",
+      resource: "github/organization/example",
+    },
+  ],
 } as Report;
 
 function dependencies(): CliDependencies {
@@ -67,7 +74,9 @@ test.each([
     expect(deps.stdout).toHaveBeenCalledWith(
       expect.stringContaining("Status: partial"),
     );
-    expect(deps.stderr).not.toHaveBeenCalled();
+    expect(deps.stderr).toHaveBeenCalledWith(
+      expect.stringContaining("GITHUB_404_HTTP"),
+    );
   },
 );
 
@@ -156,4 +165,25 @@ test("CLI displays configuration diagnostics without exposing exception messages
     "private-token",
   );
   expect(deps.scan).not.toHaveBeenCalled();
+});
+
+test("CLI prints coverage error context but redacts its collection token", async () => {
+  const deps = dependencies();
+  vi.mocked(deps.scan).mockResolvedValue({
+    ...report,
+    errors: [
+      {
+        phase: "discovery",
+        code: "GITHUB_404_HTTP",
+        resource: "github/organization/private-token",
+        message:
+          "GitHub returned HTTP 404. Check targets.orgs and token access.",
+      },
+    ],
+  });
+  expect(await run([], { GH_TOKEN: "private-token" }, deps)).toBe(0);
+  const messages = JSON.stringify(vi.mocked(deps.stderr).mock.calls);
+  expect(messages).toContain("GITHUB_404_HTTP");
+  expect(messages).toContain("targets.orgs");
+  expect(messages).not.toContain("private-token");
 });

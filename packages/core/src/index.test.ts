@@ -159,3 +159,36 @@ test("collector faults produce a safe partial report and preserve evidence obser
   ]);
   expect(JSON.stringify(report)).not.toContain("sensitive collector context");
 });
+
+test("resources outside a rule's scope do not trigger collection", async () => {
+  const collect = vi.fn(async () => {
+    throw new Error("Must not collect unrelated evidence.");
+  });
+  const report = await run({
+    rules: [{ ...rule, resourceTypes: ["other/type"] }],
+    provider: { ...provider, collect },
+  });
+  expect(collect).not.toHaveBeenCalled();
+  expect(report.evaluations[0]?.status).toBe("not-applicable");
+  expect(report.errors).toEqual([]);
+});
+
+test("output failures identify the reporter and provide safe remediation", async () => {
+  const error = await run({
+    reporters: [
+      {
+        ...reporter,
+        write: async () => {
+          throw Object.assign(new Error("secret path and payload"), {
+            code: "ENOSPC",
+          });
+        },
+      },
+    ],
+  }).catch((failure: unknown) => failure);
+  expect(error).toMatchObject({
+    code: "OUTPUT",
+    diagnostics: [expect.stringContaining("reporters[0]:")],
+  });
+  expect(JSON.stringify(error)).not.toContain("secret path");
+});

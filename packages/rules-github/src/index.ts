@@ -12,6 +12,7 @@ const actionReferences = z.object({
   ),
 });
 const protection = z.object({ minimum: z.number().int().nonnegative() });
+
 export const fullSha: Rule = {
   id: "actions/full-sha",
   version: "1.0.0",
@@ -44,6 +45,7 @@ export const fullSha: Rule = {
     };
   },
 };
+
 export const requiredReviews: Rule = {
   id: "repository/required-reviews",
   version: "1.0.0",
@@ -82,4 +84,5 @@ export const requiredReviews: Rule = {
     };
   },
 };
+
 export const builtInRules: readonly Rule[] = [fullSha, requiredReviews];

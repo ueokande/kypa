@@ -7,7 +7,14 @@ const report = {
   run: { id: "fixture", status: "partial" },
   scope: { evaluated: 1 },
   findings: [{}],
-  errors: [{}],
+  errors: [
+    {
+      phase: "discovery",
+      code: "GITHUB_404_HTTP",
+      message: "GitHub returned HTTP 404.",
+      resource: "github/organization/example",
+    },
+  ],
 } as Report;
 
 function toolkit(failOn = "never"): Toolkit {
@@ -18,6 +25,7 @@ function toolkit(failOn = "never"): Toolkit {
     setSecret: vi.fn(),
     setOutput: vi.fn(),
     setFailed: vi.fn(),
+    warning: vi.fn(),
     summary: {
       addHeading: vi.fn(),
       addRaw: vi.fn(),
@@ -43,6 +51,9 @@ test.each(["never", "violation", "error"])(
     expect(core.setOutput).toHaveBeenCalledWith("status", "partial");
     expect(core.setOutput).toHaveBeenCalledWith("violation-count", 1);
     expect(core.summary.write).toHaveBeenCalledOnce();
+    expect(core.warning).toHaveBeenCalledWith(
+      expect.stringContaining("GITHUB_404_HTTP"),
+    );
     expect(core.setFailed).toHaveBeenCalledTimes(failOn === "never" ? 0 : 1);
   },
 );
@@ -95,5 +106,19 @@ test("Action displays trusted configuration diagnostics without exposing excepti
   );
   expect(JSON.stringify(vi.mocked(core.setFailed).mock.calls)).not.toContain(
     "secret payload",
+  );
+});
+
+test("missing token and invalid failure policy have actionable input diagnostics", async () => {
+  const missing = toolkit();
+  missing.getInput = () => "";
+  await run(missing, { load, scan: vi.fn(async () => report) });
+  expect(missing.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("token input is empty"),
+  );
+  const invalid = toolkit("unsupported");
+  await run(invalid, { load, scan: vi.fn(async () => report) });
+  expect(invalid.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("fail-on: Use never, violation, or error"),
   );
 });

@@ -118,3 +118,5 @@ The `fail-on` input controls failure after report generation:
 The runner returns structured outcomes rather than CLI exit codes. The Action marks the step as failed when a generated report triggers the selected failure policy or a fatal configuration, authentication, or output error occurs. Fatal failures always fail the Action regardless of `fail-on`.
 
 Globally unusable authentication is fatal; isolated target access failures can yield a partial report. A reporter failure is fatal even if another reporter already wrote files. Generated files from a fatal run must not be deployed. Configuration validation checks rule IDs, parameters, and reporter options before collection; it does not prove remote access. Logs go to stderr and structured results go through the configured reporters.
+
+Coverage errors are emitted as workflow warnings with their error codes and remediation hints. Reports are still generated for partial scans; `fail-on` controls whether those errors fail the step.
