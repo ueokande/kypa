@@ -16,8 +16,6 @@ The initial reports are JSON and a generic static HTML dashboard containing the 
 
 Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
 
-Prefer supported dependency versions that satisfy pnpm's minimum release age. Keep `minimumReleaseAgeStrict` enabled. Do not add package/version-specific `minimumReleaseAgeExclude` entries merely to adopt the latest version; an exception needs a concrete requirement unavailable in mature supported versions.
-
 ## Workflow dependencies
 
 Use readable exact version tags in workflow `uses:` entries and commit `.github/workflows/actions.lock`. GitHub Actions resolves dependencies to the commits and repository identities recorded in this native workflow lockfile. Keep every workflow and transitive Action dependency covered. All current dependencies are JavaScript Actions without nested `uses:` dependencies.
