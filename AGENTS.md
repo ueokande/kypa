@@ -14,7 +14,7 @@ The initial reports are JSON and a generic static HTML dashboard containing the 
 
 ## Toolchain
 
-Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action smoke test.
+Use strict TypeScript and a small pnpm workspace. Use Rsbuild for the dashboard, Rslib for the Action and shared packages, Vitest for tests, and Biome (`@biomejs/biome`) for formatting and lint. Run `tsc --noEmit` separately. Do not add tsup, tsdown, Vite build configuration, or an additional monorepo task orchestrator initially. Use Node.js 24 LTS and the exact pnpm version in package.json. Commit pnpm-lock.yaml and use frozen installations in CI. Run pnpm check for lint, types, tests, builds, and the bundled Action and CLI smoke tests.
 
 ## Workflow dependencies
 
@@ -68,9 +68,9 @@ Keep built-in component packages named by role and implementation:
 | `@kypa/reporter-json`   | `packages/reporter-json`   | JSON report output.                                |
 | `@kypa/reporter-html`   | `packages/reporter-html`   | Portable HTML reporter and dashboard.              |
 
-The shared `@kypa/sdk`, `@kypa/core`, and `@kypa/action` packages retain their existing names. Use the same role-based naming for future built-in component packages. These names do not imply an external plugin API or npm publication.
+The shared `@kypa/sdk`, `@kypa/core`, and `@kypa/action` packages retain their existing names. The private `@kypa/cli` package provides local execution from the workspace. Use the same role-based naming for future built-in component packages. These names do not imply an external plugin API or npm publication.
 
-Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Do not introduce a CLI package, command parser, subprocess boundary, numeric exit-code contract, or npm CLI distribution. Focus the initial release on GitHub Actions. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
+Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Keep GitHub Actions as the primary distribution. The private CLI adapter calls the common runner directly; do not make the Action invoke the CLI or introduce a subprocess boundary between adapters and the runner. Do not publish the CLI to npm. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
 
 Keep the source structure pluggable through explicit internal provider, rule, and reporter interfaces and dependency injection. Register built-in components centrally so the runner does not depend on individual implementations. Keep credentials and collection in providers, pure evidence evaluation in rules, and common-report rendering in reporters. Validate runtime policy parameters and reject duplicate component IDs. Preserve generic resource identity and versioned evidence so future providers do not require a repository-only model.
 
@@ -82,7 +82,7 @@ Expose a common asynchronous scan function (conceptually `runScan`; its exact si
 
 Use local fixture-based Vitest unit tests for pure rules, policy validation, and report rendering. Add runner integration tests using fake collectors, controlled time, and temporary output directories to verify orchestration, partial coverage, and fatal failures without GitHub credentials or the Actions runtime. Test the Action adapter with mocked toolkit inputs/outputs, including failure-policy mapping and safe credential handling. Verify built artifacts and the actual Action in CI for runtime and GitHub integration behavior that local tests cannot establish.
 
-Unit tests are sufficient where they cover the behavior under change; do not add a CLI or mandatory local execution script solely for debugging. If a specific reproduction or live integration diagnosis needs a local harness, add a small development-only script that calls the same runner directly. Such a script is optional, is not a supported user interface, and must not establish a command compatibility promise or require a CLI architecture. Local fixture success does not prove remote permissions or hosted Actions behavior.
+Keep local argument parsing, environment token handling, output, and exit codes in @kypa/cli. Use Node.js parseArgs rather than adding a command framework for the small interface. Read GH_TOKEN with GITHUB_TOKEN as a fallback; never accept tokens as command-line arguments or log arbitrary errors. Run pnpm build followed by pnpm cli from the repository root. The CLI supports --config, --fail-on, and --help. It returns 0 for a generated report accepted by the failure policy, 1 for a report rejected by that policy, 2 for fatal errors, and 130 for cancellation. Keep Ctrl+C handling in the process entry point. Unit tests cover argument/error handling, and the bundled CLI smoke test exercises the same runner and reporters as the Action. Local fixture success does not prove remote permissions or hosted Actions behavior.
 
 ## Evaluation and reports
 
@@ -102,7 +102,7 @@ Use fixture-based Vitest tests for rules, collection/evaluation failures, and re
 
 ## Releases and distribution
 
-Keep the Action and common runner in one repository. Master tracks TypeScript source without generated JavaScript. Distribution tags vX.Y.Z point to separate generated commits containing source, dist/action, and dist/dashboard. release-please manages a separate source-vX.Y.Z tag namespace on master. Do not move exact tags or commit build output to master. There is no standalone CLI or npm publication.
+Keep the Action and common runner in one repository. Master tracks TypeScript source without generated JavaScript. Distribution tags vX.Y.Z point to separate generated commits containing source, dist/action, and dist/dashboard. release-please manages a separate source-vX.Y.Z tag namespace on master. Do not move exact tags or commit build output to master. The CLI is available from the workspace after building; it is not published to npm or included as a compiled release artifact.
 
 ### Versioning with the official Action
 
@@ -118,4 +118,4 @@ The Action's release_created, tag_name, and sha outputs feed the build job in th
 
 The read-only build job runs pnpm check, including the bundled Action smoke test, and uploads compiled artifacts. The smoke test owns build-entry-point validation. A separate contents-write job checks out the same SHA in detached mode and downloads those artifacts. Retrieve the source GitHub Release body with gh release view; stop if retrieval fails. Shell Git commands commit only dist/action and dist/dashboard, create an annotated distribution tag, and push only that tag. Native git tag and git push failures stop existing tags from being overwritten; never force-push an exact version tag. Create the distribution GitHub Release with the copied body and --verify-tag. Do not parse CHANGELOG.md. Master stays source-only. No provenance JSON, artifact hashing, custom tag-reuse logic, or release TypeScript helpers are needed.
 
-Keep maintenance instructions here and user-facing Action reference instructions in docs/github-action.md. tests/smoke/ contains the bundled Action smoke test and its synthetic GitHub fixture. Run pnpm build followed by pnpm test:smoke to test the built Action, or pnpm check for the full validation sequence. Verify workflow Shell changes in disposable Git repositories without pushing real tags or publishing Releases during development.
+Keep maintenance instructions here and user-facing Action reference instructions in docs/github-action.md. tests/smoke/ contains bundled Action and CLI smoke tests and their synthetic GitHub fixture. Run pnpm build followed by pnpm test:smoke to test the built Action and CLI, or pnpm check for the full validation sequence. Verify workflow Shell changes in disposable Git repositories without pushing real tags or publishing Releases during development.

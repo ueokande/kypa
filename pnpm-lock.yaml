@@ -54,6 +54,27 @@ importers:
         specifier: workspace:*
         version: link:../sdk
 
+  packages/cli:
+    dependencies:
+      '@kypa/core':
+        specifier: workspace:*
+        version: link:../core
+      '@kypa/provider-github':
+        specifier: workspace:*
+        version: link:../provider-github
+      '@kypa/reporter-html':
+        specifier: workspace:*
+        version: link:../reporter-html
+      '@kypa/reporter-json':
+        specifier: workspace:*
+        version: link:../reporter-json
+      '@kypa/rules-github':
+        specifier: workspace:*
+        version: link:../rules-github
+      '@kypa/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+
   packages/core:
     dependencies:
       '@kypa/sdk':

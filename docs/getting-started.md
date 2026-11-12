@@ -6,7 +6,7 @@
 
 Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions is available and choose an access-controlled static host for the HTML dashboard. The example workflow uses private GitHub Pages, but it is not required by the reporter.
 
-The initial supported entry point is the root GitHub Action in `ueokande/kypa`. No CLI is distributed through npm. You do not need a package manifest, pnpm, a local Kypa installation, or a consumer-side build to use the released Action.
+The primary distributed entry point is the root GitHub Action in `ueokande/kypa`. No CLI is distributed through npm. You do not need a package manifest, pnpm, a local Kypa installation, or a consumer-side build to use the released Action.
 
 ## Configure authentication and hosting
 

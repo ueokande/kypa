@@ -20,6 +20,17 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`pnpm check` runs Biome, separate TypeScript checks, fixture-based Vitest tests, the Rslib Action build, the Rsbuild dashboard build, and a smoke test of the bundled Action. Tests use synthetic GitHub responses and require no PAT. The smoke harness is development-only; there is no supported standalone CLI.
+`pnpm check` runs Biome, separate TypeScript checks, fixture-based Vitest tests, the Rslib Action and CLI builds, the Rsbuild dashboard build, and smoke tests of both entry points. Tests use synthetic GitHub responses and require no PAT.
 
 Generated files live in ignored `dist/`. The development branch does not track compiled Action JavaScript. See [contributor guidance](AGENTS.md) for architecture and release requirements.
+
+## Local scans
+
+After building, run the private CLI from this checkout with `GH_TOKEN` (or `GITHUB_TOKEN`) set in your environment:
+
+```sh
+pnpm build
+pnpm cli --config ./kypa.yaml
+```
+
+Run `pnpm cli --help` for options. See [local execution](docs/local-execution.md) for policy setup, reports, and exit codes. The CLI is not distributed through npm.

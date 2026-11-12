@@ -13,10 +13,11 @@ The initial release supports bundled providers, rules, and reporters. YAML selec
 | [Getting started](getting-started.md) | Configure central Actions execution and run your first scan. |
 | [Authentication](authentication.md)   | Choose a PAT and understand access requirements.             |
 | [Configuration](configuration.md)     | Define targets, rules, and output.                           |
+| [Local execution](local-execution.md) | Run the CLI from a source checkout.                          |
 | [GitHub Action](github-action.md)     | Schedule scans and publish private results.                  |
 | [Rules](rules.md)                     | Understand built-in checks and their limits.                 |
 | [Results](results.md)                 | Interpret evaluations, coverage, and freshness.              |
 
-The supported initial entry point is GitHub Actions; no standalone CLI or npm distribution is planned for the initial release. Use a published Action release tag or its reviewed full commit SHA as explained in the [Action guide](github-action.md). No release exists yet.
+GitHub Actions is the primary distribution. A private CLI is available from a built source checkout; it is not distributed through npm. Use a published Action release tag or its reviewed full commit SHA as explained in the [Action guide](github-action.md). No release exists yet.
 
 The first release excludes scan history, diffs, trends, automatic remediation, PR enforcement, and GitHub Enterprise Server. Internal repository visibility does not automatically make Pages private. No OSS license has been selected. Development constraints belong in [AGENTS.md](../AGENTS.md).
